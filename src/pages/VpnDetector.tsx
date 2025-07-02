@@ -119,17 +119,17 @@ export default function VpnDetector() {
           </div>
         </div>
 
-        {/* Admin Panel Toggle - More Visible */}
-        <Card className="border-blue-200 bg-blue-50">
+        {/* Admin Panel Toggle - Disabled */}
+        <Card className="border-blue-200 bg-blue-50 opacity-50 pointer-events-none">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Settings className="h-5 w-5 text-blue-600" />
                 <div>
                   <Label htmlFor="admin-toggle" className="text-base font-medium text-blue-900">
-                    Admin Dashboard
+                    Admin Dashboard (Disabled)
                   </Label>
-                  <p className="text-sm text-blue-700">Toggle access to admin panel and detection logs</p>
+                  <p className="text-sm text-blue-700">Admin panel access is currently disabled</p>
                 </div>
               </div>
               <Switch
@@ -137,6 +137,7 @@ export default function VpnDetector() {
                 checked={showAdminPanel}
                 onCheckedChange={handleAdminToggle}
                 className="data-[state=checked]:bg-blue-600"
+                disabled
               />
             </div>
           </CardContent>
