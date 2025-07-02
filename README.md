@@ -42,8 +42,8 @@ A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/vpn-detection-system.git
-   cd vpn-detection-system
+   git clone https://github.com/realdivinetech/vpn-detection-app.git
+   cd vpn-detection-app
    ```
 
 2. **Install dependencies**
@@ -123,7 +123,7 @@ The system uses multiple IP analysis services for enhanced reliability:
 3. Wait for the multi-layer analysis to complete
 4. Review detailed results and risk assessment
 
-### Admin Panel Access
+### Admin Panel Access (disabled out of Scope)
 1. Toggle the "Admin Dashboard" switch
 2. Login with credentials (default: admin/admin)
 3. View detection logs and system statistics
@@ -173,9 +173,6 @@ We welcome contributions! This is an open-source project.
 - Write meaningful commit messages
 - Add tests for new features
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -186,7 +183,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🐛 Issues & Support
 
-- **Bug Reports**: [GitHub Issues](https://github.com/yourusername/vpn-detection-system/issues)
+- **Bug Reports**: [GitHub Issues](https://github.com/realdivinetech/vpn-detection-app/issues)
 - **Feature Requests**: Use GitHub Issues with "enhancement" label
 - **Support**: Check existing issues or create a new one
 
