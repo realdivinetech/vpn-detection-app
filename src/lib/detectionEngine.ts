@@ -496,6 +496,64 @@ export class DetectionEngine {
 
     // Browser Fingerprint scoring
     if (results.fingerprint) {
+      // Helper function to map timezone to continent
+      const timezoneToContinent = (timezone: string): string | null => {
+        if (!timezone) return null;
+        if (timezone.startsWith('Africa')) return 'Africa';
+        if (timezone.startsWith('America')) return 'North America';
+        if (timezone.startsWith('Europe')) return 'Europe';
+        if (timezone.startsWith('Asia')) return 'Asia';
+        if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
+        return null;
+      };
+
+      // Helper function to map country code to continent
+      const countryToContinent = (countryCode: string): string | null => {
+        const mapping: Record<string, string> = {
+          'US': 'North America',
+          'CA': 'North America',
+          'MX': 'North America',
+          'BR': 'South America',
+          'AR': 'South America',
+          'GB': 'Europe',
+          'FR': 'Europe',
+          'DE': 'Europe',
+          'NG': 'Africa',
+          'ZA': 'Africa',
+          'EG': 'Africa',
+          'CN': 'Asia',
+          'JP': 'Asia',
+          'IN': 'Asia',
+          'AU': 'Oceania',
+          'NZ': 'Oceania'
+          // Add more as needed
+        };
+        return mapping[countryCode.toUpperCase()] || null;
+      };
+
+      // Check for timezone mismatch between fingerprint and IP location
+      const fingerprintTimezone = results.fingerprint.timezone;
+      const ipTimezone = results.ipAnalysis?.timezone;
+
+      let timezoneMismatch = false;
+      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
+        timezoneMismatch = true;
+        confidenceScore += 20; // Add weight for timezone mismatch
+        detectedTypes.push('Fingerprint Timezone Mismatch');
+        riskFactors.push('Mismatch between browser fingerprint timezone and IP location timezone');
+      }
+
+      // Check for continent mismatch between fingerprint and IP location
+      const fingerprintContinent = timezoneToContinent(fingerprintTimezone);
+      const ipCountryCode = results.ipAnalysis?.country?.split(' ').pop() || '';
+      const ipContinent = countryToContinent(ipCountryCode);
+
+      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
+        confidenceScore += 20; // Add weight for continent mismatch
+        detectedTypes.push('Fingerprint Continent Mismatch');
+        riskFactors.push('Mismatch between browser fingerprint continent and IP location continent');
+      }
+
       confidenceScore += results.fingerprint.suspicionScore * 0.4;
       if (results.fingerprint.suspicionScore > 70) {
         detectedTypes.push('Suspicious Fingerprint');

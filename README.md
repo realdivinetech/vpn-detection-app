@@ -7,8 +7,8 @@ A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and
 ### Core Detection Methods
 - **IP Analysis**: Comprehensive IP reputation, ASN classification, and hosting provider detection
 - **WebRTC Leak Detection**: Identifies local IP leaks through STUN servers
-- **Browser Fingerprinting**: Analyzes browser characteristics and device properties
-- **Location Verification**: Compares GPS coordinates with IP-based geolocation
+- **Browser Fingerprinting**: Analyzes browser characteristics and device properties to uniquely identify devices and detect anomalies
+- **Location Verification**: Compares GPS coordinates with IP-based geolocation to detect inconsistencies indicating VPN or proxy use
 - **Bot Detection**: Identifies automated browsers and headless environments
 - **Behavioral Analysis**: Monitors user interaction patterns for suspicious activity
 
@@ -81,6 +81,14 @@ A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and
 
 3. **Risk Scoring**: Each method contributes to an overall confidence score
 4. **Result Compilation**: All results are aggregated into a comprehensive report
+
+### Location Mismatch Detection
+
+This system detects location mismatches by comparing the user's GPS coordinates with the geolocation derived from their IP address. Significant discrepancies between these two data points indicate potential VPN or proxy usage. This method helps identify users attempting to mask their true location, enhancing detection accuracy.
+
+### Browser Fingerprinting
+
+Browser fingerprinting collects various browser and device attributes such as user agent, screen resolution, installed fonts, and plugins to create a unique identifier. This technique helps detect suspicious or inconsistent fingerprints that may indicate anonymization tools or spoofing attempts, contributing to the overall risk assessment.
 
 ### IP Analysis Details
 
@@ -183,6 +191,7 @@ We welcome contributions! This is an open-source project.
 - **IP Analysis APIs** - Free services that make this project possible
 - **Shadcn/UI** - Beautiful UI components
 - **React Community** - Amazing ecosystem and support
+- **Get Intel** - Valuable threat intelligence provider
 
 ## 🐛 Issues & Support
 
