@@ -453,6 +453,8 @@ export class DetectionEngine {
       }
 
       let timezoneMismatch = false;
+      let continentMismatch = false;
+
       if (
         fingerprintTimezone &&
         ipTimezone &&
@@ -461,7 +463,7 @@ export class DetectionEngine {
         fingerprintTimezone !== 'Unknown'
       ) {
         timezoneMismatch = true;
-        confidenceScore += 20;
+        confidenceScore += 40; // Increased from 20 to 40
         detectedTypes.push('Fingerprint Timezone Mismatch');
         riskFactors.push('Mismatch between browser fingerprint timezone and IP location timezone');
       }
@@ -478,7 +480,8 @@ export class DetectionEngine {
         ipContinent !== null &&
         fingerprintContinent !== null
       ) {
-        confidenceScore += 20;
+        continentMismatch = true;
+        confidenceScore += 40; // Increased from 20 to 40
         detectedTypes.push('Fingerprint Continent Mismatch');
         riskFactors.push('Mismatch between browser fingerprint continent and IP location continent');
       }

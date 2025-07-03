@@ -31,7 +31,9 @@ export class LocationMismatch {
         ipResult.location!
       );
 
-      const gpsCountry = ipResult.country || 'Unknown'; // You may want to reverse geocode GPS for real country
+      const gpsLat = gpsResult.location!.lat;
+      const gpsLng = gpsResult.location!.lng;
+      const gpsCountry = await this.getCountryFromLatLng(gpsLat, gpsLng) || 'Unknown';
       const ipCountry = ipResult.country || 'Unknown';
 
       if (gpsCountry === ipCountry) {
@@ -211,6 +213,19 @@ export class LocationMismatch {
         success: false,
         error: 'All IP geolocation services failed'
       };
+    }
+  }
+
+  private async getCountryFromLatLng(lat: number, lng: number): Promise<string | undefined> {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+      );
+      if (!response.ok) return undefined;
+      const data = await response.json();
+      return data.address?.country || undefined;
+    } catch {
+      return undefined;
     }
   }
 
