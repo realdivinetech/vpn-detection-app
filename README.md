@@ -155,6 +155,7 @@ This project integrates with several free IP analysis services:
 - **ipify.org**: Simple IP address API
 - **ipapi.co**: IP geolocation service
 - **ipgeolocation.io**: Professional IP analysis
+- **check.getipintel.net**: Professional IP Proxy Detection
 
 *Note: Some services may have rate limits. Consider upgrading to paid plans for production use.*
 
@@ -191,7 +192,6 @@ We welcome contributions! This is an open-source project.
 - **IP Analysis APIs** - Free services that make this project possible
 - **Shadcn/UI** - Beautiful UI components
 - **React Community** - Amazing ecosystem and support
-- **Get Intel** - Valuable threat intelligence provider
 
 ## 🐛 Issues & Support
 
