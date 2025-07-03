@@ -156,6 +156,9 @@ export class DetectionEngine {
       // Use Promise.allSettled to try all services
       const results = await Promise.allSettled(services);
       
+      // Debug log all results
+      console.debug('IP analysis results:', results);
+
       // Find the first successful result
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value.publicIp !== 'Unknown') {
