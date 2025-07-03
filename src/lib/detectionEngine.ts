@@ -539,7 +539,14 @@ export class DetectionEngine {
       fingerprintMismatch
     ];
 
-    const isVpnDetected = confidenceScore >= 50 || criticalFlags.some(flag => flag === true);
+    const isVpnDetected = confidenceScore >= 50;
+
+    console.log('Critical Flags:', {
+      webrtcLeak: results.webrtcLeak?.hasLeak,
+      locationMismatch: results.locationMismatch?.hasMismatch,
+      botDetection: results.botDetection?.isBot,
+      fingerprintMismatch
+    });
 
     return {
       isVpnDetected,

@@ -39,9 +39,10 @@ export default function DetectionResult({ result }: DetectionResultProps) {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="font-medium">Overall Status:</span>
-            <Badge className={result.isVpnDetected ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}>
-              {result.isVpnDetected ? 'VPN/Proxy Detected' : 'Clean Connection'}
-            </Badge>
+            {result.isVpnDetected
+              ? <Badge className="bg-red-100 text-red-800">VPN/Proxy Detected</Badge>
+              : <Badge className="bg-green-100 text-green-800">No VPN or Proxy Detected</Badge>
+            }
           </div>
 
           {result.confidenceScore < 30 && (
