@@ -120,7 +120,7 @@ export default function VpnDetector() {
         </header>
 
         {/* Admin Panel Toggle - Disabled */}
-        <Card className="border-blue-200 bg-blue-50 opacity-50 pointer-events-none">
+        {/* <Card className="border-blue-200 bg-blue-50 opacity-50 pointer-events-none">
           <CardContent className="pt-4 sm:pt-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
               <div className="flex items-center space-x-2">
@@ -141,7 +141,7 @@ export default function VpnDetector() {
               />
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Main Detection Interface */}
         <Card className="border-0 shadow-xl">
