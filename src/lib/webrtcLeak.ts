@@ -1,3 +1,11 @@
+interface WebRTCLeakResult {
+  hasLeak: boolean;
+  localIps: string[];
+  localIpCountry?: string;
+  publicIp?: string;
+  stunServersUsed: string[];
+}
+
 export class WebRTCLeak {
   private stunServers = [
     'stun:stun.l.google.com:19302',
@@ -7,13 +15,7 @@ export class WebRTCLeak {
     'stun:stun.stunprotocol.org:3478'
   ];
 
-  async detectLeak(): Promise<{
-    hasLeak: boolean;
-    localIps: string[];
-    localIpCountry?: string;
-    publicIp?: string;
-    stunServersUsed: string[];
-  }> {
+  async detectLeak(): Promise<WebRTCLeakResult> {
     return new Promise((resolve) => {
       const localIps: string[] = [];
       const stunServersUsed: string[] = [];

@@ -20,6 +20,7 @@ export default function DetectionResult({ result }: DetectionResultProps) {
   };
 
   const threat = getThreatLevel();
+  const locationMismatch = result.results?.locationMismatch;
 
   return (
     <div className="space-y-6 px-2 md:px-0">
@@ -263,20 +264,37 @@ export default function DetectionResult({ result }: DetectionResultProps) {
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">GPS Available:</span>
-              <Badge variant={result.results.locationMismatch?.gpsAvailable ? 'secondary' : 'outline'}>
-                {result.results.locationMismatch?.gpsAvailable ? 'Yes' : 'No'}
+              <Badge className={result.results?.locationMismatch?.gpsAvailable ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                {result.results?.locationMismatch?.gpsAvailable ? 'Yes' : 'No'}
               </Badge>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Location Match:</span>
-              <Badge variant={result.results.locationMismatch?.hasMismatch ? 'destructive' : 'secondary'}>
-                {result.results.locationMismatch?.hasMismatch ? 'Mismatch' : 'Match'}
+              <Badge
+                className={
+                  locationMismatch?.matchLevel === 'mismatch'
+                    ? 'bg-red-100 text-red-800'
+                    : locationMismatch?.matchLevel === 'fair'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-green-100 text-green-800'
+                }
+              >
+                {locationMismatch?.matchLevel === 'good'
+                  ? 'Good'
+                  : locationMismatch?.matchLevel === 'fair'
+                  ? 'Fair'
+                  : 'Mismatch'}
               </Badge>
             </div>
-            {result.results.locationMismatch?.distance && (
+            {typeof locationMismatch?.distance === 'number' && (
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Distance:</span>
-                <span className="text-sm">{Math.round(result.results.locationMismatch.distance)} km</span>
+                <span className="text-sm">{Math.round(locationMismatch.distance)} km</span>
+              </div>
+            )}
+            {locationMismatch?.message && (
+              <div className="text-xs text-muted-foreground italic">
+                {locationMismatch.message}
               </div>
             )}
           </CardContent>

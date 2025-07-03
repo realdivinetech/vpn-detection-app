@@ -184,36 +184,36 @@ export default function VpnDetector() {
             )}
 
             {/* Detection Methods Overview */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
               <DetectionCard
                 title="IP Analysis"
                 description="ASN, geolocation, and hosting detection"
                 icon="🌐"
-                status={result?.results.ipAnalysis ? 'completed' : 'pending'}
+                status={result?.results?.ipAnalysis ? 'completed' : 'pending'}
               />
               <DetectionCard
                 title="WebRTC Leak"
                 description="Local IP leak detection"
                 icon="🔗"
-                status={result?.results.webrtcLeak ? 'completed' : 'pending'}
+                status={result?.results?.webrtcLeak ? 'completed' : 'pending'}
               />
               <DetectionCard
                 title="Fingerprinting"
                 description="Browser and device analysis"
                 icon="🖼️"
-                status={result?.results.fingerprint ? 'completed' : 'pending'}
+                status={result?.results?.fingerprint ? 'completed' : 'pending'}
               />
               <DetectionCard
                 title="Location Check"
                 description="GPS vs IP location comparison"
                 icon="📍"
-                status={result?.results.locationMismatch ? 'completed' : 'pending'}
+                status={result?.results?.locationMismatch ? 'completed' : 'pending'}
               />
               <DetectionCard
                 title="Bot Detection"
                 description="Automated browser detection"
                 icon="🤖"
-                status={result?.results.botDetection ? 'completed' : 'pending'}
+                status={result?.results?.botDetection ? 'completed' : 'pending'}
               />
               <DetectionCard
                 title="Behavior Analysis"

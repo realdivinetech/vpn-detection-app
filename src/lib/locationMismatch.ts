@@ -1,11 +1,13 @@
 export class LocationMismatch {
   async checkLocationMismatch(): Promise<{
     hasMismatch: boolean;
+    matchLevel: 'good' | 'fair' | 'mismatch';
+    message: string;
+    distance?: number;
     countryMismatch?: boolean;
     gpsAvailable: boolean;
     gpsLocation?: { lat: number; lng: number; accuracy: number };
     ipLocation?: { lat: number; lng: number; country: string; city: string };
-    distance?: number;
     error?: string;
   }> {
     try {
@@ -17,6 +19,8 @@ export class LocationMismatch {
       if (!gpsResult.success || !ipResult.success) {
         return {
           hasMismatch: false,
+          matchLevel: 'mismatch',
+          message: 'Could not determine location',
           gpsAvailable: gpsResult.success,
           error: gpsResult.error || ipResult.error
         };
@@ -27,31 +31,62 @@ export class LocationMismatch {
         ipResult.location!
       );
 
-      // Consider mismatch if distance > 100km
-      const distanceMismatch = distance > 100;
+      const gpsCountry = ipResult.country || 'Unknown'; // You may want to reverse geocode GPS for real country
+      const ipCountry = ipResult.country || 'Unknown';
 
-      // Check country mismatch if GPS country is available (reverse geocode GPS coords)
-      // For simplicity, assume GPS country is same as IP country if not available
-      const gpsCountry = gpsResult.location ? ipResult.country : 'Unknown';
-      const countryMismatch = gpsCountry !== ipResult.country;
-
-      const hasMismatch = distanceMismatch || countryMismatch;
-
-      return {
-        hasMismatch,
-        countryMismatch,
-        gpsAvailable: true,
-        gpsLocation: gpsResult.location,
-        ipLocation: {
-          ...ipResult.location!,
-          country: ipResult.country || 'Unknown',
-          city: ipResult.city || 'Unknown'
-        },
-        distance
-      };
+      if (gpsCountry === ipCountry) {
+        if (distance <= 200) {
+          return {
+            hasMismatch: false,
+            matchLevel: 'good',
+            message: `Good location match (distance: ${Math.round(distance)} km, same country)`,
+            distance,
+            countryMismatch: false,
+            gpsAvailable: true,
+            gpsLocation: gpsResult.location,
+            ipLocation: {
+              ...ipResult.location!,
+              country: ipResult.country || 'Unknown',
+              city: ipResult.city || 'Unknown'
+            }
+          };
+        } else {
+          return {
+            hasMismatch: false,
+            matchLevel: 'fair',
+            message: `Fair location match (distance: ${Math.round(distance)} km, same country, likely ISP drift)`,
+            distance,
+            countryMismatch: false,
+            gpsAvailable: true,
+            gpsLocation: gpsResult.location,
+            ipLocation: {
+              ...ipResult.location!,
+              country: ipResult.country || 'Unknown',
+              city: ipResult.city || 'Unknown'
+            }
+          };
+        }
+      } else {
+        return {
+          hasMismatch: true,
+          matchLevel: 'mismatch',
+          message: `Location mismatched (different countries: GPS=${gpsCountry}, IP=${ipCountry})`,
+          distance,
+          countryMismatch: true,
+          gpsAvailable: true,
+          gpsLocation: gpsResult.location,
+          ipLocation: {
+            ...ipResult.location!,
+            country: ipResult.country || 'Unknown',
+            city: ipResult.city || 'Unknown'
+          }
+        };
+      }
     } catch (error) {
       return {
         hasMismatch: false,
+        matchLevel: 'mismatch',
+        message: 'Location check failed',
         gpsAvailable: false,
         error: 'Location check failed'
       };

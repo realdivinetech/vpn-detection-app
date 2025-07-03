@@ -156,33 +156,72 @@ export class DetectionEngine {
 
       // Use Promise.allSettled to try all services
       const results = await Promise.allSettled(services);
-      
-      // Debug log all results
-      console.debug('IP analysis results:', results);
 
-      // Find the first successful result
+      // Try to find the first result with a valid IP
+      let firstIpResult: any = null;
+      let foundValidIp = false;
       for (const result of results) {
-        if (result.status === 'fulfilled' && result.value.publicIp !== 'Unknown') {
+        if (result.status === 'fulfilled' && result.value.publicIp && result.value.publicIp !== 'Unknown') {
           // Fallback timezone logic
-         if (!('timezone' in result.value) || !result.value.timezone || result.value.timezone === 'Unknown') {
-         const countryCode = result.value.country ? result.value.country.split(' ').pop() : '';
-         if (countryCode) {
-          // Only assign if the property exists
-        (result.value as any).timezone = this.getTimezoneFromCountryCode(countryCode);
-      }
-}
-
-              // Enrich with WhatIsMyIpAddress data
-              const whatIsMyIpData = await this.analyzeWithWhatIsMyIpAddress(result.value.publicIp);
-              // Use type assertion to allow assignment
-              (result.value as any).vpnDetected = whatIsMyIpData.vpnDetected;
-              (result.value as any).blacklisted = whatIsMyIpData.blacklisted;
-
+          if (!('timezone' in result.value) || !result.value.timezone || result.value.timezone === 'Unknown') {
+            const countryCode = result.value.country ? result.value.country.split(' ').pop() : '';
+            if (countryCode) {
+              (result.value as any).timezone = this.getTimezoneFromCountryCode(countryCode);
+            }
+          }
+          // Enrich with WhatIsMyIpAddress data
+          const whatIsMyIpData = await this.analyzeWithWhatIsMyIpAddress(result.value.publicIp);
+          (result.value as any).vpnDetected = whatIsMyIpData.vpnDetected;
+          (result.value as any).blacklisted = whatIsMyIpData.blacklisted;
           return result.value;
+        }
+        // Save the first result that has a publicIp, even if it's 'Unknown'
+        if (result.status === 'fulfilled' && result.value.publicIp) {
+          firstIpResult = result.value;
         }
       }
 
-      // If all services fail, return fallback
+      // Always try the fallback if no valid IP was found
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        if (ipResponse.ok) {
+          const ipData = await ipResponse.json();
+          if (ipData.ip) {
+            return {
+              publicIp: ipData.ip,
+              country: 'Unknown',
+              city: 'Unknown',
+              region: 'Unknown',
+              hostname: 'Unknown',
+              isp: 'Unknown',
+              organization: 'Unknown',
+              asn: null,
+              asnOrg: 'Unknown',
+              isDatacenter: false,
+              isHosting: false,
+              isTor: false,
+              isProxy: false,
+              riskScore: 0,
+              latitude: null,
+              longitude: null,
+              timezone: 'Unknown',
+              connectionType: 'Unknown',
+              sharedConnection: 'Unknown',
+              dynamicConnection: 'Unknown',
+              securityScanner: 'No',
+              trustedNetwork: 'Unknown',
+              frequentAbuser: 'Unknown',
+              highRiskAttacks: 'Unknown',
+              vpnDetected: false,
+              blacklisted: false
+            };
+          }
+        }
+      } catch (ipOnlyError) {
+        // Ignore, fallback below
+      }
+
+      // If all services and fallback fail, return fallback
       return {
         publicIp: 'Unknown',
         country: 'Unknown',
@@ -263,8 +302,8 @@ export class DetectionEngine {
 
       // Additional fallback for timezone if missing or unknown
       let timezone = data.timezone || 'Unknown';
-      if (timezone === 'Unknown' && data.country) {
-        timezone = this.getTimezoneFromCountryCode(data.country);
+      if (timezone === 'Unknown' && data.countryCode) {
+        timezone = this.getTimezoneFromCountryCode(data.countryCode);
       }
 
       return {
@@ -414,9 +453,15 @@ export class DetectionEngine {
       }
 
       let timezoneMismatch = false;
-      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
+      if (
+        fingerprintTimezone &&
+        ipTimezone &&
+        fingerprintTimezone !== ipTimezone &&
+        ipTimezone !== 'Unknown' &&
+        fingerprintTimezone !== 'Unknown'
+      ) {
         timezoneMismatch = true;
-        confidenceScore += 20; // Add weight for timezone mismatch
+        confidenceScore += 20;
         detectedTypes.push('Fingerprint Timezone Mismatch');
         riskFactors.push('Mismatch between browser fingerprint timezone and IP location timezone');
       }
@@ -426,8 +471,14 @@ export class DetectionEngine {
       const ipCountryCode = results.ipAnalysis?.country?.split(' ').pop() || '';
       const ipContinent = countryToContinent(ipCountryCode);
 
-      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
-        confidenceScore += 20; // Add weight for continent mismatch
+      if (
+        fingerprintContinent &&
+        ipContinent &&
+        fingerprintContinent !== ipContinent &&
+        ipContinent !== null &&
+        fingerprintContinent !== null
+      ) {
+        confidenceScore += 20;
         detectedTypes.push('Fingerprint Continent Mismatch');
         riskFactors.push('Mismatch between browser fingerprint continent and IP location continent');
       }
@@ -440,11 +491,15 @@ export class DetectionEngine {
     }
 
     // Location Mismatch scoring - increased weight
-    if (results.locationMismatch?.hasMismatch) {
+    if (
+      results.locationMismatch &&
+      results.locationMismatch.hasMismatch === true
+    ) {
       confidenceScore += 40;
       detectedTypes.push('Location Mismatch');
-      riskFactors.push('GPS and IP location mismatch');
+      riskFactors.push((results.locationMismatch as any).message || 'Location mismatch detected');
     }
+    // Optionally, you can log or display the message and distance for 'good' and 'fair' matches
 
     // Bot Detection scoring
     if (results.botDetection?.isBot) {
@@ -577,9 +632,9 @@ export class DetectionEngine {
       const riskScore = this.calculateRiskScore(geoData, isDatacenter, isHosting);
 
       // Additional fallback for timezone if missing or unknown
-      let timezone = geoData.timezone || 'Unknown';
-      if (timezone === 'Unknown' && geoData.country_code) {
-        timezone = this.getTimezoneFromCountryCode(geoData.country_code);
+      let timezone = geoData.time_zone?.name || geoData.time_zone || 'Unknown';
+      if (timezone === 'Unknown' && geoData.country_code2) {
+        timezone = this.getTimezoneFromCountryCode(geoData.country_code2);
       }
 
       return {
@@ -620,6 +675,11 @@ export class DetectionEngine {
       const isHosting = this.isHostingProvider(data.isp, data.organization);
       const riskScore = this.calculateRiskScore(data, isDatacenter, isHosting);
 
+      let timezone = data.time_zone?.name || data.time_zone || 'Unknown';
+      if (timezone === 'Unknown' && data.country_code2) {
+        timezone = this.getTimezoneFromCountryCode(data.country_code2);
+      }
+
       return {
         publicIp: data.ip,
         country: data.country_name,
@@ -633,7 +693,8 @@ export class DetectionEngine {
         isProxy: riskScore > 70,
         riskScore,
         latitude: parseFloat(data.latitude),
-        longitude: parseFloat(data.longitude)
+        longitude: parseFloat(data.longitude),
+        timezone
       };
     } catch (error) {
       console.error('IPGeolocation service failed:', error);

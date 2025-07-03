@@ -88,19 +88,13 @@ export interface FingerprintResult {
 
 export interface LocationMismatchResult {
   hasMismatch: boolean;
-  gpsAvailable: boolean;
-  gpsLocation?: {
-    lat: number;
-    lng: number;
-    accuracy: number;
-  };
-  ipLocation?: {
-    lat: number;
-    lng: number;
-    country: string;
-    city: string;
-  };
+  matchLevel?: 'good' | 'fair' | 'mismatch';
+  message?: string;
   distance?: number;
+  countryMismatch?: boolean;
+  gpsAvailable: boolean;
+  gpsLocation?: { lat: number; lng: number; accuracy: number };
+  ipLocation?: { lat: number; lng: number; country: string; city: string };
   error?: string;
 }
 
