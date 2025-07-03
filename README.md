@@ -104,10 +104,13 @@ The system uses multiple IP analysis services for enhanced reliability:
 - Datacenter IP: +40 points
 - Hosting Provider: +30 points
 - Suspicious ASN: +20 points
-- WebRTC Leak: +20 points
+- WebRTC Leak: +35 points (increased weight)
 - Bot Detection: +35 points
-- Location Mismatch: +25 points
+- Location Mismatch: +40 points (increased weight)
 - Suspicious Fingerprint: Variable (0-40 points)
+
+**Additional Logic:**
+- VPN detection is forced if any critical flags such as WebRTC leak, location mismatch, or bot detection are present, regardless of the overall confidence score.
 
 **Confidence Levels:**
 - 0-30%: Low risk (likely legitimate user)
