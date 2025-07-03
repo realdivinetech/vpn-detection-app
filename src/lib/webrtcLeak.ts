@@ -1,9 +1,10 @@
 interface WebRTCLeakResult {
   hasLeak: boolean;
   localIps: string[];
-  localIpCountry?: string;
-  publicIp?: string;
+  localIpv6s: string[];
+  publicIps: string[];
   stunServersUsed: string[];
+  // Remove localIpCountry as it is no longer used
 }
 
 export class WebRTCLeak {
@@ -18,45 +19,44 @@ export class WebRTCLeak {
   async detectLeak(): Promise<WebRTCLeakResult> {
     return new Promise((resolve) => {
       const localIps: string[] = [];
+      const localIpv6s: string[] = [];
+      const publicIps: string[] = [];
       const stunServersUsed: string[] = [];
       let completedChecks = 0;
       const totalChecks = this.stunServers.length;
 
-      const handleComplete = async () => {
+      const ipv4Regex = /([0-9]{1,3}(?:\.[0-9]{1,3}){3})/;
+      // Simplified IPv6 regex for ICE candidates (may need refinement)
+      const ipv6Regex = /([a-fA-F0-9:]+:+)+[a-fA-F0-9]+/;
+
+      const handleComplete = () => {
         completedChecks++;
         if (completedChecks >= totalChecks) {
           const uniqueLocalIps = [...new Set(localIps)];
-          let localIpCountry = '';
-          if (uniqueLocalIps.length > 0) {
-            try {
-              const response = await fetch(`https://ipapi.co/${uniqueLocalIps[0]}/country/`);
-              if (response.ok) {
-                localIpCountry = await response.text();
-              }
-            } catch {
-              // ignore errors
-            }
-          }
+          const uniqueLocalIpv6s = [...new Set(localIpv6s)];
+          const uniquePublicIps = [...new Set(publicIps)];
           resolve({
-            hasLeak: uniqueLocalIps.length > 0,
+            hasLeak: uniqueLocalIps.length > 0 || uniqueLocalIpv6s.length > 0 || uniquePublicIps.length > 0,
             localIps: uniqueLocalIps,
-            localIpCountry,
+            localIpv6s: uniqueLocalIpv6s,
+            publicIps: uniquePublicIps,
             stunServersUsed
           });
         }
       };
 
-      // If WebRTC is not supported, return no leak
       if (!window.RTCPeerConnection) {
         resolve({
           hasLeak: false,
           localIps: [],
+          localIpv6s: [],
+          publicIps: [],
           stunServersUsed: []
         });
         return;
       }
 
-      this.stunServers.forEach((stunServer, index) => {
+      this.stunServers.forEach((stunServer) => {
         try {
           const pc = new RTCPeerConnection({
             iceServers: [{ urls: stunServer }]
@@ -69,14 +69,24 @@ export class WebRTCLeak {
           pc.onicecandidate = (event) => {
             if (event.candidate) {
               const candidate = event.candidate.candidate;
-              const ipMatch = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
-              
-              if (ipMatch) {
-                const ip = ipMatch[1];
-                // Filter out localhost and invalid IPs
+
+              // Extract IPv4 addresses
+              const ipv4Match = candidate.match(ipv4Regex);
+              if (ipv4Match) {
+                const ip = ipv4Match[1];
                 if (this.isValidLocalIP(ip)) {
                   localIps.push(ip);
+                } else {
+                  publicIps.push(ip);
                 }
+              }
+
+              // Extract IPv6 addresses
+              const ipv6Match = candidate.match(ipv6Regex);
+              if (ipv6Match) {
+                const ip6 = ipv6Match[0];
+                // For simplicity, consider all IPv6 as local (could refine)
+                localIpv6s.push(ip6);
               }
             }
           };
@@ -95,7 +105,6 @@ export class WebRTCLeak {
               handleComplete();
             });
 
-          // Timeout after 3 seconds
           setTimeout(() => {
             if (pc.iceGatheringState !== 'complete') {
               pc.close();
@@ -103,75 +112,32 @@ export class WebRTCLeak {
             }
           }, 3000);
 
-        } catch (error) {
+        } catch {
           handleComplete();
         }
       });
 
-      // Fallback timeout
       setTimeout(() => {
         if (completedChecks < totalChecks) {
-          const uniqueLocalIps = [...new Set(localIps)];
-          let localIpCountry = '';
-          (async () => {
-            if (uniqueLocalIps.length > 0) {
-              try {
-                const response = await fetch(`https://ipapi.co/${uniqueLocalIps[0]}/country/`);
-                if (response.ok) {
-                  localIpCountry = await response.text();
-                }
-              } catch {
-                // ignore errors
-              }
-            }
-            resolve({
-              hasLeak: uniqueLocalIps.length > 0,
-              localIps: uniqueLocalIps,
-              localIpCountry,
-              stunServersUsed
-            });
-          })();
+          handleComplete();
         }
       }, 5000);
     });
   }
 
   private isValidLocalIP(ip: string): boolean {
-    // Check if IP is a valid local/private IP
     const parts = ip.split('.').map(Number);
-    
     if (parts.length !== 4 || parts.some(part => part < 0 || part > 255)) {
       return false;
     }
-
-    // Exclude localhost
     if (ip === '127.0.0.1' || ip === '0.0.0.0') {
       return false;
     }
-
-    // Include private IP ranges
     return (
-      (parts[0] === 10) || // 10.0.0.0/8
-      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || // 172.16.0.0/12
-      (parts[0] === 192 && parts[1] === 168) || // 192.168.0.0/16
-      (parts[0] === 169 && parts[1] === 254) // 169.254.0.0/16 (link-local)
+      (parts[0] === 10) ||
+      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+      (parts[0] === 192 && parts[1] === 168) ||
+      (parts[0] === 169 && parts[1] === 254)
     );
-  }
-
-  async getPublicIP(): Promise<string | null> {
-    try {
-      const response = await fetch('https://api.ipify.org?format=json');
-      const data = await response.json();
-      return data.ip;
-    } catch (error) {
-      try {
-        // Fallback to another service
-        const response = await fetch('https://httpbin.org/ip');
-        const data = await response.json();
-        return data.origin;
-      } catch (fallbackError) {
-        return null;
-      }
-    }
   }
 }

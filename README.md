@@ -122,22 +122,20 @@ This data is incorporated into the IP analysis results.
 The overall detection confidence score is calculated by combining weighted factors from:
 
 - IP Analysis:
-  - Datacenter IP (+30)
-  - Hosting Provider IP (+25)
-  - Tor Exit Node (+40)
-  - VPN Server Detected via WhatIsMyIpAddress (+50)
-  - Blacklisted IP via WhatIsMyIpAddress (+30)
-  - Risk score from IP services (weighted by 0.3)
-- WebRTC Leak (+35)
-- WebRTC Local IP Country Mismatch (+40)  
-  - Compares the country of the WebRTC local IP (private IP) with the public IP country to improve VPN detection accuracy.
+  - Datacenter IP (+40)
+  - Hosting Provider IP (+35)
+  - Tor Exit Node (+50)
+  - VPN Server Detected via WhatIsMyIpAddress (+60)
+  - Blacklisted IP via WhatIsMyIpAddress (+40)
+  - Risk score from IP services (weighted by 0.5)
+- WebRTC Leak (+10)
 - Browser Fingerprint:
-  - Timezone mismatch (+20)
-  - Continent mismatch (+20)
-  - Suspicion score (weighted by 0.4)
-- Location Mismatch (+40)
+  - Timezone mismatch (+50)
+  - Continent mismatch (+50)
+  - Suspicion score (weighted by 0.5)
+- Location Mismatch (+50)
   - Includes distance mismatch (>100 km) and country mismatch between GPS and IP location.
-- Bot/Automation Detection (+35)
+- Bot/Automation Detection (+45)
 
 
 ## Fallback Logic

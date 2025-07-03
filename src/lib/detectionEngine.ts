@@ -34,10 +34,7 @@ export class DetectionEngine {
 
       const results: DetectionResults = {
         ipAnalysis,
-        webrtcLeak: {
-          ...webrtcResult,
-          localIpCountry: webrtcResult.localIpCountry ?? 'Unknown'
-        },
+        webrtcLeak: webrtcResult as any,
         fingerprint: {
           ...fingerprintResult,
           languages: Array.from(fingerprintResult.languages)
@@ -154,25 +151,11 @@ export class DetectionEngine {
       confidenceScore += results.ipAnalysis.riskScore * 0.5; // increased weight from 0.3 to 0.5
     }
 
-    // WebRTC Leak scoring - increased weights and refined mismatch check
+    // WebRTC Leak scoring - reduced weight and removed local IP country mismatch check
     if (results.webrtcLeak?.hasLeak) {
-      confidenceScore += 45; // increased from 35
+      confidenceScore += 10; // reduced from 45
       detectedTypes.push('WebRTC Leak');
       riskFactors.push('Local IP leak detected');
-      const localIp = results.webrtcLeak.localIps[0] || '';
-      const publicIpCountry = results.ipAnalysis?.country || '';
-      const localIpCountry = results.webrtcLeak.localIpCountry || '';
-      if (
-        typeof localIp === 'string' &&
-        isPrivateIp(localIp) &&
-        localIpCountry &&
-        publicIpCountry &&
-        localIpCountry !== publicIpCountry
-      ) {
-        confidenceScore += 50; // increased from 40
-        detectedTypes.push('WebRTC Local IP Country Mismatch');
-        riskFactors.push('Mismatch between WebRTC local IP country and public IP country');
-      }
     }
 
     // Browser Fingerprint scoring - adjusted weights and added threshold for suspicion
