@@ -26,7 +26,7 @@ A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 18 + TypeScript + Vite
+- **Frontend**: React 19.1.0 + TypeScript + Vite
 - **UI Framework**: Shadcn/UI + Tailwind CSS
 - **State Management**: React Hooks
 - **Build Tool**: Vite
