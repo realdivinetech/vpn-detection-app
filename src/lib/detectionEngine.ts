@@ -83,6 +83,60 @@ export class DetectionEngine {
     return countryTimezoneMap[countryCode.toUpperCase()] || 'Unknown';
   }
 
+  private async analyzeWithWhatIsMyIpAddress(ip: string) {
+    try {
+      const ipInfoUrl = `https://whatismyipaddress.com/ip/${ip}`;
+      const blacklistUrl = `https://whatismyipaddress.com/blacklist-check`;
+
+      // Fetch IP info page
+      const ipInfoResponse = await fetch(ipInfoUrl, { method: 'GET' });
+      if (!ipInfoResponse.ok) throw new Error('Failed to fetch IP info page');
+      const ipInfoHtml = await ipInfoResponse.text();
+
+      // Fetch blacklist check page to get form and cookies
+      const blacklistPageResponse = await fetch(blacklistUrl, { method: 'GET' });
+      if (!blacklistPageResponse.ok) throw new Error('Failed to fetch blacklist check page');
+      const blacklistPageHtml = await blacklistPageResponse.text();
+
+      // Extract any necessary cookies or tokens from blacklistPageHtml if needed (not implemented here)
+
+      // Submit IP via POST or GET form simulation (assuming POST with form data 'ip')
+      const formData = new URLSearchParams();
+      formData.append('ip', ip);
+
+      const blacklistResponse = await fetch(blacklistUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          // Include cookies or tokens if required
+        },
+        body: formData.toString()
+      });
+
+      if (!blacklistResponse.ok) throw new Error('Failed to submit IP for blacklist check');
+      const blacklistHtml = await blacklistResponse.text();
+
+      // Parse IP info HTML to extract VPN server detection info
+      const vpnDetected = /VPN Server: Yes/i.test(ipInfoHtml) || /VPN: Yes/i.test(ipInfoHtml);
+
+      // Parse blacklist HTML to extract blacklist status by checking for cancel marks or "IP Listed"
+      const blacklisted = /IP Listed: Bad IP Listed/i.test(blacklistHtml) || /cancel/i.test(blacklistHtml);
+
+      return {
+        publicIp: ip,
+        vpnDetected,
+        blacklisted
+      };
+    } catch (error) {
+      console.error('WhatIsMyIpAddress analysis failed:', error);
+      return {
+        publicIp: ip,
+        vpnDetected: false,
+        blacklisted: false
+      };
+    }
+  }
+
   private async runIpAnalysis() {
     try {
       // Try multiple free IP analysis services
@@ -99,12 +153,20 @@ export class DetectionEngine {
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value.publicIp !== 'Unknown') {
           // Fallback timezone logic
-          if (!result.value.timezone || result.value.timezone === 'Unknown') {
-            const countryCode = result.value.country ? result.value.country.split(' ').pop() : '';
-            if (countryCode) {
-              result.value.timezone = this.getTimezoneFromCountryCode(countryCode);
-            }
-          }
+         if (!('timezone' in result.value) || !result.value.timezone || result.value.timezone === 'Unknown') {
+         const countryCode = result.value.country ? result.value.country.split(' ').pop() : '';
+         if (countryCode) {
+          // Only assign if the property exists
+        (result.value as any).timezone = this.getTimezoneFromCountryCode(countryCode);
+      }
+}
+
+              // Enrich with WhatIsMyIpAddress data
+              const whatIsMyIpData = await this.analyzeWithWhatIsMyIpAddress(result.value.publicIp);
+              // Use type assertion to allow assignment
+              (result.value as any).vpnDetected = whatIsMyIpData.vpnDetected;
+              (result.value as any).blacklisted = whatIsMyIpData.blacklisted;
+
           return result.value;
         }
       }
@@ -134,7 +196,9 @@ export class DetectionEngine {
         securityScanner: 'No',
         trustedNetwork: 'Unknown',
         frequentAbuser: 'Unknown',
-        highRiskAttacks: 'Unknown'
+        highRiskAttacks: 'Unknown',
+        vpnDetected: false,
+        blacklisted: false
       };
     } catch (error) {
       console.error('IP analysis failed:', error);
@@ -162,9 +226,209 @@ export class DetectionEngine {
         securityScanner: 'No',
         trustedNetwork: 'Unknown',
         frequentAbuser: 'Unknown',
-        highRiskAttacks: 'Unknown'
+        highRiskAttacks: 'Unknown',
+        vpnDetected: false,
+        blacklisted: false
       };
     }
+  }
+
+  private calculateOverallResult(results: DetectionResults): DetectionResult {
+    let confidenceScore = 0;
+    const detectedTypes: string[] = [];
+    const riskFactors: string[] = [];
+
+    // IP Analysis scoring
+    if (results.ipAnalysis) {
+      if (results.ipAnalysis.isDatacenter) {
+        confidenceScore += 30;
+        detectedTypes.push('Datacenter IP');
+        riskFactors.push('IP hosted in datacenter');
+      }
+      if (results.ipAnalysis.isHosting) {
+        confidenceScore += 25;
+        detectedTypes.push('Hosting Provider');
+        riskFactors.push('Hosting provider IP');
+      }
+      if (results.ipAnalysis.isTor) {
+        confidenceScore += 40;
+        detectedTypes.push('Tor Exit Node');
+        riskFactors.push('Tor network detected');
+      }
+      if (results.ipAnalysis.vpnDetected) {
+        confidenceScore += 50;
+        detectedTypes.push('VPN Server Detected');
+        riskFactors.push('IP identified as VPN server by WhatIsMyIpAddress');
+      }
+      if (results.ipAnalysis.blacklisted) {
+        confidenceScore += 30;
+        detectedTypes.push('Blacklisted IP');
+        riskFactors.push('IP listed on blacklist by WhatIsMyIpAddress');
+      }
+      confidenceScore += results.ipAnalysis.riskScore * 0.3;
+    }
+
+    // WebRTC Leak scoring - increased weight
+    if (results.webrtcLeak?.hasLeak) {
+      confidenceScore += 35;
+      detectedTypes.push('WebRTC Leak');
+      riskFactors.push('Local IP leak detected');
+    }
+
+    // Browser Fingerprint scoring
+    if (results.fingerprint) {
+      // Helper function to map timezone to continent
+      const timezoneToContinent = (timezone: string): string | null => {
+        if (!timezone) return null;
+        if (timezone.startsWith('Africa')) return 'Africa';
+        if (timezone.startsWith('America')) return 'North America';
+        if (timezone.startsWith('Europe')) return 'Europe';
+        if (timezone.startsWith('Asia')) return 'Asia';
+        if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
+        return null;
+      };
+
+      // Helper function to map country code to continent
+      const countryToContinent = (countryCode: string): string | null => {
+        const mapping: Record<string, string> = {
+          'US': 'North America',
+          'CA': 'North America',
+          'MX': 'North America',
+          'BR': 'South America',
+          'AR': 'South America',
+          'GB': 'Europe',
+          'FR': 'Europe',
+          'DE': 'Europe',
+          'NG': 'Africa',
+          'ZA': 'Africa',
+          'EG': 'Africa',
+          'CN': 'Asia',
+          'JP': 'Asia',
+          'IN': 'Asia',
+          'AU': 'Oceania',
+          'NZ': 'Oceania'
+          // Add more as needed
+        };
+        return mapping[countryCode.toUpperCase()] || null;
+      };
+
+      // Check for timezone mismatch between fingerprint and IP location
+      const fingerprintTimezone = results.fingerprint.timezone;
+      const ipTimezone = results.ipAnalysis?.timezone;
+
+      let timezoneMismatch = false;
+      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
+        timezoneMismatch = true;
+        confidenceScore += 20; // Add weight for timezone mismatch
+        detectedTypes.push('Fingerprint Timezone Mismatch');
+        riskFactors.push('Mismatch between browser fingerprint timezone and IP location timezone');
+      }
+
+      // Check for continent mismatch between fingerprint and IP location
+      const fingerprintContinent = timezoneToContinent(fingerprintTimezone);
+      const ipCountryCode = results.ipAnalysis?.country?.split(' ').pop() || '';
+      const ipContinent = countryToContinent(ipCountryCode);
+
+      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
+        confidenceScore += 20; // Add weight for continent mismatch
+        detectedTypes.push('Fingerprint Continent Mismatch');
+        riskFactors.push('Mismatch between browser fingerprint continent and IP location continent');
+      }
+
+      confidenceScore += results.fingerprint.suspicionScore * 0.4;
+      if (results.fingerprint.suspicionScore > 70) {
+        detectedTypes.push('Suspicious Fingerprint');
+        riskFactors.push('Abnormal browser fingerprint');
+      }
+    }
+
+    // Location Mismatch scoring - increased weight
+    if (results.locationMismatch?.hasMismatch) {
+      confidenceScore += 40;
+      detectedTypes.push('Location Mismatch');
+      riskFactors.push('GPS and IP location mismatch');
+    }
+
+    // Bot Detection scoring
+    if (results.botDetection?.isBot) {
+      confidenceScore += 35;
+      detectedTypes.push('Bot/Automation');
+      riskFactors.push('Automated browser detected');
+    }
+
+    // Cap confidence score at 100
+    confidenceScore = Math.min(100, Math.round(confidenceScore));
+
+    // Force VPN detection if critical flags are true
+    const fingerprintMismatch = (() => {
+      if (!results.fingerprint || !results.ipAnalysis) return false;
+
+      const timezoneToContinent = (timezone: string): string | null => {
+        if (!timezone) return null;
+        if (timezone.startsWith('Africa')) return 'Africa';
+        if (timezone.startsWith('America')) return 'North America';
+        if (timezone.startsWith('Europe')) return 'Europe';
+        if (timezone.startsWith('Asia')) return 'Asia';
+        if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
+        return null;
+      };
+
+      const countryToContinent = (countryCode: string): string | null => {
+        const mapping: Record<string, string> = {
+          'US': 'North America',
+          'CA': 'North America',
+          'MX': 'North America',
+          'BR': 'South America',
+          'AR': 'South America',
+          'GB': 'Europe',
+          'FR': 'Europe',
+          'DE': 'Europe',
+          'NG': 'Africa',
+          'ZA': 'Africa',
+          'EG': 'Africa',
+          'CN': 'Asia',
+          'JP': 'Asia',
+          'IN': 'Asia',
+          'AU': 'Oceania',
+          'NZ': 'Oceania'
+        };
+        return mapping[countryCode.toUpperCase()] || null;
+      };
+
+      const fingerprintTimezone = results.fingerprint.timezone;
+      const ipTimezone = results.ipAnalysis.timezone;
+      const fingerprintContinent = timezoneToContinent(fingerprintTimezone);
+      const ipCountryCode = results.ipAnalysis.country?.split(' ').pop() || '';
+      const ipContinent = countryToContinent(ipCountryCode);
+
+      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
+        return true;
+      }
+
+      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
+        return true;
+      }
+
+      return false;
+    })();
+
+    const criticalFlags = [
+      results.webrtcLeak?.hasLeak,
+      results.locationMismatch?.hasMismatch,
+      results.botDetection?.isBot,
+      fingerprintMismatch
+    ];
+
+    const isVpnDetected = confidenceScore >= 50 || criticalFlags.some(flag => flag === true);
+
+    return {
+      isVpnDetected,
+      confidenceScore,
+      detectedTypes,
+      riskFactors,
+      results,
+      timestamp: new Date().toISOString()
+    };
   }
 
   private async analyzeWithIpApi() {
@@ -493,193 +757,6 @@ export class DetectionEngine {
     return frameworks.filter((_, index) => checks[index]);
   }
 
-  private calculateOverallResult(results: DetectionResults): DetectionResult {
-    let confidenceScore = 0;
-    const detectedTypes: string[] = [];
-    const riskFactors: string[] = [];
-
-    // IP Analysis scoring
-    if (results.ipAnalysis) {
-      if (results.ipAnalysis.isDatacenter) {
-        confidenceScore += 30;
-        detectedTypes.push('Datacenter IP');
-        riskFactors.push('IP hosted in datacenter');
-      }
-      if (results.ipAnalysis.isHosting) {
-        confidenceScore += 25;
-        detectedTypes.push('Hosting Provider');
-        riskFactors.push('Hosting provider IP');
-      }
-      if (results.ipAnalysis.isTor) {
-        confidenceScore += 40;
-        detectedTypes.push('Tor Exit Node');
-        riskFactors.push('Tor network detected');
-      }
-      confidenceScore += results.ipAnalysis.riskScore * 0.3;
-    }
-
-    // WebRTC Leak scoring - increased weight
-    if (results.webrtcLeak?.hasLeak) {
-      confidenceScore += 35;
-      detectedTypes.push('WebRTC Leak');
-      riskFactors.push('Local IP leak detected');
-    }
-
-    // Browser Fingerprint scoring
-    if (results.fingerprint) {
-      // Helper function to map timezone to continent
-      const timezoneToContinent = (timezone: string): string | null => {
-        if (!timezone) return null;
-        if (timezone.startsWith('Africa')) return 'Africa';
-        if (timezone.startsWith('America')) return 'North America';
-        if (timezone.startsWith('Europe')) return 'Europe';
-        if (timezone.startsWith('Asia')) return 'Asia';
-        if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
-        return null;
-      };
-
-      // Helper function to map country code to continent
-      const countryToContinent = (countryCode: string): string | null => {
-        const mapping: Record<string, string> = {
-          'US': 'North America',
-          'CA': 'North America',
-          'MX': 'North America',
-          'BR': 'South America',
-          'AR': 'South America',
-          'GB': 'Europe',
-          'FR': 'Europe',
-          'DE': 'Europe',
-          'NG': 'Africa',
-          'ZA': 'Africa',
-          'EG': 'Africa',
-          'CN': 'Asia',
-          'JP': 'Asia',
-          'IN': 'Asia',
-          'AU': 'Oceania',
-          'NZ': 'Oceania'
-          // Add more as needed
-        };
-        return mapping[countryCode.toUpperCase()] || null;
-      };
-
-      // Check for timezone mismatch between fingerprint and IP location
-      const fingerprintTimezone = results.fingerprint.timezone;
-      const ipTimezone = results.ipAnalysis?.timezone;
-
-      let timezoneMismatch = false;
-      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
-        timezoneMismatch = true;
-        confidenceScore += 20; // Add weight for timezone mismatch
-        detectedTypes.push('Fingerprint Timezone Mismatch');
-        riskFactors.push('Mismatch between browser fingerprint timezone and IP location timezone');
-      }
-
-      // Check for continent mismatch between fingerprint and IP location
-      const fingerprintContinent = timezoneToContinent(fingerprintTimezone);
-      const ipCountryCode = results.ipAnalysis?.country?.split(' ').pop() || '';
-      const ipContinent = countryToContinent(ipCountryCode);
-
-      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
-        confidenceScore += 20; // Add weight for continent mismatch
-        detectedTypes.push('Fingerprint Continent Mismatch');
-        riskFactors.push('Mismatch between browser fingerprint continent and IP location continent');
-      }
-
-      confidenceScore += results.fingerprint.suspicionScore * 0.4;
-      if (results.fingerprint.suspicionScore > 70) {
-        detectedTypes.push('Suspicious Fingerprint');
-        riskFactors.push('Abnormal browser fingerprint');
-      }
-    }
-
-    // Location Mismatch scoring - increased weight
-    if (results.locationMismatch?.hasMismatch) {
-      confidenceScore += 40;
-      detectedTypes.push('Location Mismatch');
-      riskFactors.push('GPS and IP location mismatch');
-    }
-
-    // Bot Detection scoring
-    if (results.botDetection?.isBot) {
-      confidenceScore += 35;
-      detectedTypes.push('Bot/Automation');
-      riskFactors.push('Automated browser detected');
-    }
-
-    // Cap confidence score at 100
-    confidenceScore = Math.min(100, Math.round(confidenceScore));
-
-    // Force VPN detection if critical flags are true
-    const fingerprintMismatch = (() => {
-      if (!results.fingerprint || !results.ipAnalysis) return false;
-
-      const timezoneToContinent = (timezone: string): string | null => {
-        if (!timezone) return null;
-        if (timezone.startsWith('Africa')) return 'Africa';
-        if (timezone.startsWith('America')) return 'North America';
-        if (timezone.startsWith('Europe')) return 'Europe';
-        if (timezone.startsWith('Asia')) return 'Asia';
-        if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
-        return null;
-      };
-
-      const countryToContinent = (countryCode: string): string | null => {
-        const mapping: Record<string, string> = {
-          'US': 'North America',
-          'CA': 'North America',
-          'MX': 'North America',
-          'BR': 'South America',
-          'AR': 'South America',
-          'GB': 'Europe',
-          'FR': 'Europe',
-          'DE': 'Europe',
-          'NG': 'Africa',
-          'ZA': 'Africa',
-          'EG': 'Africa',
-          'CN': 'Asia',
-          'JP': 'Asia',
-          'IN': 'Asia',
-          'AU': 'Oceania',
-          'NZ': 'Oceania'
-        };
-        return mapping[countryCode.toUpperCase()] || null;
-      };
-
-      const fingerprintTimezone = results.fingerprint.timezone;
-      const ipTimezone = results.ipAnalysis.timezone;
-      const fingerprintContinent = timezoneToContinent(fingerprintTimezone);
-      const ipCountryCode = results.ipAnalysis.country?.split(' ').pop() || '';
-      const ipContinent = countryToContinent(ipCountryCode);
-
-      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
-        return true;
-      }
-
-      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
-        return true;
-      }
-
-      return false;
-    })();
-
-    const criticalFlags = [
-      results.webrtcLeak?.hasLeak,
-      results.locationMismatch?.hasMismatch,
-      results.botDetection?.isBot,
-      fingerprintMismatch
-    ];
-
-    const isVpnDetected = confidenceScore >= 50 || criticalFlags.some(flag => flag === true);
-
-    return {
-      isVpnDetected,
-      confidenceScore,
-      detectedTypes,
-      riskFactors,
-      results,
-      timestamp: new Date().toISOString()
-    };
-  }
 
   private async logDetection(result: DetectionResult, duration: number): Promise<void> {
     try {

@@ -41,6 +41,8 @@ export interface IpAnalysisResult {
   trustedNetwork?: string;
   frequentAbuser?: string;
   highRiskAttacks?: string;
+  vpnDetected?: boolean;
+  blacklisted?: boolean;
 }
 
 export interface WebRTCLeakResult {
