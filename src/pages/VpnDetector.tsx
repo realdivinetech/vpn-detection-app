@@ -115,7 +115,7 @@ export default function VpnDetector() {
             Advanced multi-layer detection system to identify VPN, proxy, and anonymization services
           </p>
           <div className="text-sm text-muted-foreground">
-            Powered by <strong>Defi Xpert and Divine Tech</strong> (realdivinetech)
+            By<strong>Defi Xpert and Divine Tech</strong> (realdivinetech)
           </div>
         </div>
 
