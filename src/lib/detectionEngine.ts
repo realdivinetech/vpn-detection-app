@@ -59,6 +59,30 @@ export class DetectionEngine {
     }
   }
 
+  private getTimezoneFromCountryCode(countryCode: string): string {
+    // Basic mapping of country codes to timezones (can be expanded)
+    const countryTimezoneMap: Record<string, string> = {
+      'US': 'America/New_York',
+      'CA': 'America/Toronto',
+      'GB': 'Europe/London',
+      'FR': 'Europe/Paris',
+      'DE': 'Europe/Berlin',
+      'NG': 'Africa/Lagos',
+      'ZA': 'Africa/Johannesburg',
+      'EG': 'Africa/Cairo',
+      'CN': 'Asia/Shanghai',
+      'JP': 'Asia/Tokyo',
+      'IN': 'Asia/Kolkata',
+      'AU': 'Australia/Sydney',
+      'NZ': 'Pacific/Auckland',
+      'BR': 'America/Sao_Paulo',
+      'MX': 'America/Mexico_City',
+      'AR': 'America/Argentina/Buenos_Aires'
+      // Add more as needed
+    };
+    return countryTimezoneMap[countryCode.toUpperCase()] || 'Unknown';
+  }
+
   private async runIpAnalysis() {
     try {
       // Try multiple free IP analysis services
@@ -74,6 +98,13 @@ export class DetectionEngine {
       // Find the first successful result
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value.publicIp !== 'Unknown') {
+          // Fallback timezone logic
+          if (!result.value.timezone || result.value.timezone === 'Unknown') {
+            const countryCode = result.value.country ? result.value.country.split(' ').pop() : '';
+            if (countryCode) {
+              result.value.timezone = this.getTimezoneFromCountryCode(countryCode);
+            }
+          }
           return result.value;
         }
       }

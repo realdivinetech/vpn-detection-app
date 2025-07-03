@@ -189,9 +189,9 @@ export class BrowserFingerprinting {
     if (!connection) return null;
 
     return {
-      effectiveType: connection.effectiveType,
-      downlink: connection.downlink,
-      rtt: connection.rtt
+      effectiveType: (connection as any).effectiveType,
+      downlink: (connection as any).downlink,
+      rtt: (connection as any).rtt
     };
   }
 
@@ -199,13 +199,13 @@ export class BrowserFingerprinting {
     let score = 0;
 
     // Check for headless browser indicators
-    if (!fingerprint.plugins || fingerprint.plugins.length === 0) score += 20;
-    if (!fingerprint.languages || fingerprint.languages.length === 0) score += 15;
+    if (!fingerprint.plugins || (fingerprint.plugins as string[]).length === 0) score += 20;
+    if (!fingerprint.languages || (fingerprint.languages as string[]).length === 0) score += 15;
     if (fingerprint.hardwareConcurrency === 0) score += 10;
     if (fingerprint.screenResolution === '0x0') score += 25;
     if (!fingerprint.canvasHash) score += 15;
     if (!fingerprint.webglHash) score += 10;
-    if (fingerprint.fontList.length < 5) score += 20;
+    if ((fingerprint.fontList as string[]).length < 5) score += 20;
 
     // Check for automation indicators
     if (navigator.webdriver) score += 30;
@@ -213,9 +213,9 @@ export class BrowserFingerprinting {
     if ((window as unknown as { phantom?: unknown }).phantom) score += 25;
 
     // Check for inconsistencies
-    if (fingerprint.platform.includes('Win') && !fingerprint.userAgent.includes('Windows')) score += 15;
-    if (fingerprint.platform.includes('Mac') && !fingerprint.userAgent.includes('Mac')) score += 15;
-    if (fingerprint.platform.includes('Linux') && !fingerprint.userAgent.includes('Linux')) score += 15;
+    if ((fingerprint.platform as string).includes('Win') && !(fingerprint.userAgent as string).includes('Windows')) score += 15;
+    if ((fingerprint.platform as string).includes('Mac') && !(fingerprint.userAgent as string).includes('Mac')) score += 15;
+    if ((fingerprint.platform as string).includes('Linux') && !(fingerprint.userAgent as string).includes('Linux')) score += 15;
 
     return Math.min(100, score);
   }
