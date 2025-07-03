@@ -115,8 +115,8 @@ export default function VpnDetector() {
             Advanced multi-layer detection system to identify VPN, proxy, and anonymization services
           </p>
           <div className="text-sm text-muted-foreground">
-            Powered by <strong>Divine Tech</strong> (realdivinetech)
-          </div>
+            Powered by <strong>Defi Xpert and Divine Tech</strong> (realdivinetech)
+          </div>a
         </div>
 
         {/* Admin Panel Toggle - Disabled */}
@@ -129,7 +129,7 @@ export default function VpnDetector() {
                   <Label htmlFor="admin-toggle" className="text-base font-medium text-blue-900">
                     Admin Dashboard (Disabled)
                   </Label>
-                  <p className="text-sm text-blue-700">Admin panel access is currently disabled</p>
+                  <p className="text-sm text-blue-700">Admin panel access is currently disabled For Security Reasons</p>
                 </div>
               </div>
               <Switch
