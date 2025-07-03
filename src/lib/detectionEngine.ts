@@ -579,10 +579,63 @@ export class DetectionEngine {
     confidenceScore = Math.min(100, Math.round(confidenceScore));
 
     // Force VPN detection if critical flags are true
+    const fingerprintMismatch = (() => {
+      if (!results.fingerprint || !results.ipAnalysis) return false;
+
+      const timezoneToContinent = (timezone: string): string | null => {
+        if (!timezone) return null;
+        if (timezone.startsWith('Africa')) return 'Africa';
+        if (timezone.startsWith('America')) return 'North America';
+        if (timezone.startsWith('Europe')) return 'Europe';
+        if (timezone.startsWith('Asia')) return 'Asia';
+        if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
+        return null;
+      };
+
+      const countryToContinent = (countryCode: string): string | null => {
+        const mapping: Record<string, string> = {
+          'US': 'North America',
+          'CA': 'North America',
+          'MX': 'North America',
+          'BR': 'South America',
+          'AR': 'South America',
+          'GB': 'Europe',
+          'FR': 'Europe',
+          'DE': 'Europe',
+          'NG': 'Africa',
+          'ZA': 'Africa',
+          'EG': 'Africa',
+          'CN': 'Asia',
+          'JP': 'Asia',
+          'IN': 'Asia',
+          'AU': 'Oceania',
+          'NZ': 'Oceania'
+        };
+        return mapping[countryCode.toUpperCase()] || null;
+      };
+
+      const fingerprintTimezone = results.fingerprint.timezone;
+      const ipTimezone = results.ipAnalysis.timezone;
+      const fingerprintContinent = timezoneToContinent(fingerprintTimezone);
+      const ipCountryCode = results.ipAnalysis.country?.split(' ').pop() || '';
+      const ipContinent = countryToContinent(ipCountryCode);
+
+      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
+        return true;
+      }
+
+      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
+        return true;
+      }
+
+      return false;
+    })();
+
     const criticalFlags = [
       results.webrtcLeak?.hasLeak,
       results.locationMismatch?.hasMismatch,
-      results.botDetection?.isBot
+      results.botDetection?.isBot,
+      fingerprintMismatch
     ];
 
     const isVpnDetected = confidenceScore >= 50 || criticalFlags.some(flag => flag === true);
