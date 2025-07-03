@@ -21,7 +21,7 @@ export class LocationMismatch {
           hasMismatch: false,
           matchLevel: gpsResult.success ? 'mismatch' : 'good',
           message: gpsResult.success ? 'Could not determine location' : 'Location turned off or unavailable',
-          gpsAvailable: gpsResult.success,
+          gpsAvailable: gpsResult.success && gpsResult.location !== undefined,
           error: gpsResult.error || ipResult.error
         };
       }
