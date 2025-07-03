@@ -116,54 +116,51 @@ export class DetectionEngine {
     const detectedTypes: string[] = [];
     const riskFactors: string[] = [];
 
+    const scoringConfig: { [key: string]: { weight: number; label: string; risk: string } } = {
+      isDatacenter: { weight: 40, label: 'Datacenter IP', risk: 'IP hosted in datacenter' },
+      isHosting: { weight: 35, label: 'Hosting Provider', risk: 'Hosting provider IP' },
+      isTor: { weight: 50, label: 'Tor Exit Node', risk: 'Tor network detected' },
+      vpnDetected: { weight: 60, label: 'VPN Server Detected', risk: 'IP identified as VPN server by WhatIsMyIpAddress' },
+      blacklisted: { weight: 40, label: 'Blacklisted IP', risk: 'IP listed on blacklist by WhatIsMyIpAddress' },
+      webrtcLeak: { weight: 10, label: 'WebRTC Leak', risk: 'Local IP leak detected' },
+      fingerprintTimezoneMismatch: { weight: 50, label: 'Fingerprint Timezone Mismatch', risk: 'Mismatch between browser fingerprint timezone and IP location timezone' },
+      fingerprintContinentMismatch: { weight: 50, label: 'Fingerprint Continent Mismatch', risk: 'Mismatch between browser fingerprint continent and IP location continent' },
+      suspiciousFingerprint: { weight: 0, label: 'Suspicious Fingerprint', risk: 'Abnormal browser fingerprint' }, // weight added below conditionally
+      locationMismatch: { weight: 50, label: 'Location Mismatch', risk: 'Location mismatch detected' },
+      botDetection: { weight: 45, label: 'Bot/Automation', risk: 'Automated browser detected' }
+    };
+
     // Helper function to check if IP is private
     const isPrivateIp = (ip: string): boolean => {
       return /^10\./.test(ip) || /^192\.168\./.test(ip) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
     };
 
-    // IP Analysis scoring - increased weights for stronger signals
+    // IP Analysis scoring
     if (results.ipAnalysis) {
-      if (results.ipAnalysis.isDatacenter) {
-        confidenceScore += 40; // increased from 30
-        detectedTypes.push('Datacenter IP');
-        riskFactors.push('IP hosted in datacenter');
+      for (const key of ['isDatacenter', 'isHosting', 'isTor', 'vpnDetected', 'blacklisted']) {
+        if (results.ipAnalysis[key as keyof typeof results.ipAnalysis]) {
+          const config = scoringConfig[key];
+          confidenceScore += config.weight;
+          detectedTypes.push(config.label);
+          riskFactors.push(config.risk);
+        }
       }
-      if (results.ipAnalysis.isHosting) {
-        confidenceScore += 35; // increased from 25
-        detectedTypes.push('Hosting Provider');
-        riskFactors.push('Hosting provider IP');
-      }
-      if (results.ipAnalysis.isTor) {
-        confidenceScore += 50; // increased from 40
-        detectedTypes.push('Tor Exit Node');
-        riskFactors.push('Tor network detected');
-      }
-      if (results.ipAnalysis.vpnDetected) {
-        confidenceScore += 60; // increased from 50
-        detectedTypes.push('VPN Server Detected');
-        riskFactors.push('IP identified as VPN server by WhatIsMyIpAddress');
-      }
-      if (results.ipAnalysis.blacklisted) {
-        confidenceScore += 40; // increased from 30
-        detectedTypes.push('Blacklisted IP');
-        riskFactors.push('IP listed on blacklist by WhatIsMyIpAddress');
-      }
-      confidenceScore += results.ipAnalysis.riskScore * 0.5; // increased weight from 0.3 to 0.5
+      confidenceScore += results.ipAnalysis.riskScore * 0.5;
     }
 
-    // WebRTC Leak scoring - reduced weight and removed local IP country mismatch check
+    // WebRTC Leak scoring
     if (results.webrtcLeak?.hasLeak) {
-      confidenceScore += 10; // reduced from 45
-      detectedTypes.push('WebRTC Leak');
-      riskFactors.push('Local IP leak detected');
+      const config = scoringConfig.webrtcLeak;
+      confidenceScore += config.weight;
+      detectedTypes.push(config.label);
+      riskFactors.push(config.risk);
     }
 
-    // Browser Fingerprint scoring - adjusted weights and added threshold for suspicion
+    // Browser Fingerprint scoring
     if (results.fingerprint) {
       const fingerprintTimezone = results.fingerprint.timezone;
       let ipTimezone = results.ipAnalysis?.timezone;
 
-      // Fallback to timezone from country code if missing
       if ((!ipTimezone || ipTimezone === 'Unknown') && results.ipAnalysis?.country) {
         const countryParts = results.ipAnalysis.country.trim().split(' ');
         let countryCode = countryParts[countryParts.length - 1];
@@ -173,18 +170,17 @@ export class DetectionEngine {
         }
       }
 
-      // Timezone mismatch
       if (
         fingerprintTimezone !== ipTimezone &&
         ipTimezone !== 'Unknown' &&
         fingerprintTimezone !== 'Unknown'
       ) {
-        confidenceScore += 50; // increased from 40
-        detectedTypes.push('Fingerprint Timezone Mismatch');
-        riskFactors.push('Mismatch between browser fingerprint timezone and IP location timezone');
+        const config = scoringConfig.fingerprintTimezoneMismatch;
+        confidenceScore += config.weight;
+        detectedTypes.push(config.label);
+        riskFactors.push(config.risk);
       }
 
-      // Continent mismatch
       const fingerprintContinent = this.timezoneToContinent(fingerprintTimezone);
       const ipCountryCode = results.ipAnalysis?.country
         ? results.ipAnalysis.country.split(' ').pop() || ''
@@ -196,33 +192,38 @@ export class DetectionEngine {
         ipContinent &&
         fingerprintContinent !== ipContinent
       ) {
-        confidenceScore += 50; // increased from 40
-        detectedTypes.push('Fingerprint Continent Mismatch');
-        riskFactors.push('Mismatch between browser fingerprint continent and IP location continent');
+        const config = scoringConfig.fingerprintContinentMismatch;
+        confidenceScore += config.weight;
+        detectedTypes.push(config.label);
+        riskFactors.push(config.risk);
       }
 
-      confidenceScore += results.fingerprint.suspicionScore * 0.5; // increased weight from 0.4 to 0.5
-      if (results.fingerprint.suspicionScore > 60) { // lowered threshold from 70
-        detectedTypes.push('Suspicious Fingerprint');
-        riskFactors.push('Abnormal browser fingerprint');
+      confidenceScore += results.fingerprint.suspicionScore * 0.5;
+      if (results.fingerprint.suspicionScore > 60) {
+        const config = scoringConfig.suspiciousFingerprint;
+        confidenceScore += 10; // Add weight for suspicious fingerprint
+        detectedTypes.push(config.label);
+        riskFactors.push(config.risk);
       }
     }
 
-    // Location Mismatch scoring - increased weight
+    // Location Mismatch scoring
     if (
       results.locationMismatch &&
       results.locationMismatch.hasMismatch === true
     ) {
-      confidenceScore += 50; // increased from 40
-      detectedTypes.push('Location Mismatch');
-      riskFactors.push((results.locationMismatch as any).message || 'Location mismatch detected');
+      const config = scoringConfig.locationMismatch;
+      confidenceScore += config.weight;
+      detectedTypes.push(config.label);
+      riskFactors.push((results.locationMismatch as any).message || config.risk);
     }
 
-    // Bot Detection scoring - increased weight and lowered threshold for detection
+    // Bot Detection scoring
     if (results.botDetection?.isBot) {
-      confidenceScore += 45; // increased from 35
-      detectedTypes.push('Bot/Automation');
-      riskFactors.push('Automated browser detected');
+      const config = scoringConfig.botDetection;
+      confidenceScore += config.weight;
+      detectedTypes.push(config.label);
+      riskFactors.push(config.risk);
     }
 
     // Cap confidence score at 100

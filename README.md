@@ -132,7 +132,7 @@ The overall detection confidence score is calculated by combining weighted facto
 - Browser Fingerprint:
   - Timezone mismatch (+50)
   - Continent mismatch (+50)
-  - Suspicion score (weighted by 0.5)
+  - Suspicion score (weighted by 0.5, +10 if suspicious)
 - Location Mismatch (+50)
   - Includes distance mismatch (>100 km) and country mismatch between GPS and IP location.
 - Bot/Automation Detection (+45)
