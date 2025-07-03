@@ -108,51 +108,51 @@ export default function DetectionResult({ result }: DetectionResultProps) {
             <div className="grid grid-cols-1 gap-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Public IP:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.publicIp || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.publicIp ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Country:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.country || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.country ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">City:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.city || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.city ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Region:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.region || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.region ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Hostname:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.hostname || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.hostname ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">ISP:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.isp || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.isp ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Organization:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.organization || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.organization ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">ASN:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.asn || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.asn ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Time Zone:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.timezone || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.timezone ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Latitude:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.latitude || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.latitude ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Longitude:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.longitude || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.longitude ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Risk Score:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.riskScore || 0}/100</span>
+                <span className="font-medium">{result.results.ipAnalysis?.riskScore ?? 0}/100</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Is Datacenter:</span>
@@ -162,31 +162,31 @@ export default function DetectionResult({ result }: DetectionResultProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Connection Type:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.connectionType || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.connectionType ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shared Connection:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.sharedConnection || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.sharedConnection ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Dynamic Connection:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.dynamicConnection || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.dynamicConnection ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Security Scanner:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.securityScanner || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.securityScanner ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Trusted Network:</span>
-                <span className="font-medium">{result.results.ipAnalysis?.trustedNetwork || 'N/A'}</span>
+                <span className="font-medium">{result.results.ipAnalysis?.trustedNetwork ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between items-start">
                 <span className="text-muted-foreground">Frequent Abuser:</span>
-                <span className="font-medium text-right text-xs max-w-[50%]">{result.results.ipAnalysis?.frequentAbuser || 'N/A'}</span>
+                <span className="font-medium text-right text-xs max-w-[50%]">{result.results.ipAnalysis?.frequentAbuser ?? 'N/A'}</span>
               </div>
               <div className="flex justify-between items-start">
                 <span className="text-muted-foreground">High Risk Attacks:</span>
-                <span className="font-medium text-right text-xs max-w-[50%]">{result.results.ipAnalysis?.highRiskAttacks || 'N/A'}</span>
+                <span className="font-medium text-right text-xs max-w-[50%]">{result.results.ipAnalysis?.highRiskAttacks ?? 'N/A'}</span>
               </div>
             </div>
           </CardContent>
@@ -262,42 +262,66 @@ export default function DetectionResult({ result }: DetectionResultProps) {
               Location Analysis
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">GPS Available:</span>
-              <Badge className={result.results?.locationMismatch?.gpsAvailable ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                {result.results?.locationMismatch?.gpsAvailable ? 'Yes' : 'No'}
-              </Badge>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Location Match:</span>
-              <Badge
-                className={
-                  locationMismatch?.matchLevel === 'mismatch'
-                    ? 'bg-red-100 text-red-800'
-                    : locationMismatch?.matchLevel === 'fair'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-green-100 text-green-800'
-                }
-              >
-                {locationMismatch?.matchLevel === 'good'
-                  ? 'Good'
-                  : locationMismatch?.matchLevel === 'fair'
-                  ? 'Fair'
-                  : 'Mismatch'}
-              </Badge>
-            </div>
-            {typeof locationMismatch?.distance === 'number' && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Distance:</span>
-                <span className="text-sm">{Math.round(locationMismatch.distance)} km</span>
+          <CardContent className="space-y-2">
+            <div>
+              <div className="text-sm">
+                <span className="font-medium">GPS Available:</span>
+                <span className="ml-2">
+                  <Badge className={locationMismatch?.gpsAvailable ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                    {locationMismatch?.gpsAvailable ? 'Yes' : 'No'}
+                  </Badge>
+                </span>
               </div>
-            )}
-            {locationMismatch?.message && (
-              <div className="text-xs text-muted-foreground italic">
-                {locationMismatch.message}
+              <div className="text-sm mt-1">
+                <span className="font-medium">GPS Location:</span>
+                <span className="ml-2">
+                  {locationMismatch?.gpsLocation
+                    ? `${locationMismatch.gpsLocation.lat.toFixed(5)}, ${locationMismatch.gpsLocation.lng.toFixed(5)}`
+                    : 'N/A'}
+                </span>
               </div>
-            )}
+              <div className="text-sm mt-1">
+                <span className="font-medium">GPS Accuracy:</span>
+                <span className="ml-2">
+                  {locationMismatch?.gpsLocation?.accuracy !== undefined
+                    ? `${locationMismatch.gpsLocation.accuracy} m`
+                    : 'N/A'}
+                </span>
+              </div>
+              <div className="text-sm mt-1">
+                <span className="font-medium">Location Match:</span>
+                <span className="ml-2">
+                  <Badge
+                    className={
+                      locationMismatch?.matchLevel === 'mismatch'
+                        ? 'bg-red-100 text-red-800'
+                        : locationMismatch?.matchLevel === 'fair'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-green-100 text-green-800'
+                    }
+                  >
+                    {locationMismatch?.matchLevel === 'good'
+                      ? 'Good'
+                      : locationMismatch?.matchLevel === 'fair'
+                      ? 'Fair'
+                      : 'Mismatch'}
+                  </Badge>
+                </span>
+              </div>
+              <div className="text-sm mt-1">
+                <span className="font-medium">Distance:</span>
+                <span className="ml-2">
+                  {typeof locationMismatch?.distance === 'number'
+                    ? `${Math.round(locationMismatch.distance)} km`
+                    : 'N/A'}
+                </span>
+              </div>
+              {locationMismatch?.message && (
+                <div className="text-xs text-muted-foreground italic mt-2">
+                  {locationMismatch.message}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

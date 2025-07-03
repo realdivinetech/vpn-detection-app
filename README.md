@@ -175,7 +175,6 @@ This project integrates with several free IP analysis services:
 - **ipgeolocation.io**: Professional IP analysis
 - **check.getipintel.net**: Professional IP Proxy Detection
 - **IPinfo.io**: Ip check
-- **https://nominatim.openstreetmap.org**: GPS geolocation to get country
 
 *Note: Some services may have rate limits. Consider upgrading to paid plans for production use.*
 

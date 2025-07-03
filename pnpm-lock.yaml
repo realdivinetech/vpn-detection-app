@@ -170,7 +170,7 @@ devDependencies:
     specifier: ^18.3.23
     version: 18.3.23
   '@types/react-dom':
-    specifier: ^18.3.7
+    specifier: ^18.2.21
     version: 18.3.7(@types/react@18.3.23)
   '@vitejs/plugin-react-swc':
     specifier: ^3.5.0

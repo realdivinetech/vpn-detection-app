@@ -34,56 +34,35 @@ export class LocationMismatch {
       const gpsLat = gpsResult.location!.lat;
       const gpsLng = gpsResult.location!.lng;
       const gpsCountry = await this.getCountryFromLatLng(gpsLat, gpsLng) || 'Unknown';
-      const ipCountry = ipResult.country || 'Unknown';
+      const ipCountry = ipResult.country;
 
-      if (gpsCountry === ipCountry) {
-        if (distance <= 200) {
-          return {
-            hasMismatch: false,
-            matchLevel: 'good',
-            message: `Good location match (distance: ${Math.round(distance)} km, same country)`,
-            distance,
-            countryMismatch: false,
-            gpsAvailable: true,
-            gpsLocation: gpsResult.location,
-            ipLocation: {
-              ...ipResult.location!,
-              country: ipResult.country || 'Unknown',
-              city: ipResult.city || 'Unknown'
-            }
-          };
-        } else {
-          return {
-            hasMismatch: false,
-            matchLevel: 'fair',
-            message: `Fair location match (distance: ${Math.round(distance)} km, same country, likely ISP drift)`,
-            distance,
-            countryMismatch: false,
-            gpsAvailable: true,
-            gpsLocation: gpsResult.location,
-            ipLocation: {
-              ...ipResult.location!,
-              country: ipResult.country || 'Unknown',
-              city: ipResult.city || 'Unknown'
-            }
-          };
-        }
+      let matchLevel: 'good' | 'fair' | 'mismatch';
+      let message: string;
+
+      if (distance <= 300) {
+        matchLevel = 'good';
+        message = `Good location match (distance: ${Math.round(distance)} km, likely same region or city)`;
+      } else if (distance <= 1000) {
+        matchLevel = 'fair';
+        message = `Fair location match (distance: ${Math.round(distance)} km, possible ISP drift)`;
       } else {
-        return {
-          hasMismatch: true,
-          matchLevel: 'mismatch',
-          message: `Location mismatched (different countries: GPS=${gpsCountry}, IP=${ipCountry})`,
-          distance,
-          countryMismatch: true,
-          gpsAvailable: true,
-          gpsLocation: gpsResult.location,
-          ipLocation: {
-            ...ipResult.location!,
-            country: ipResult.country || 'Unknown',
-            city: ipResult.city || 'Unknown'
-          }
-        };
+        matchLevel = 'mismatch';
+        message = `Location mismatch (distance: ${Math.round(distance)} km, GPS and IP are far apart)`;
       }
+
+      return {
+        hasMismatch: matchLevel === 'mismatch',
+        matchLevel,
+        message,
+        distance,
+        gpsAvailable: true,
+        gpsLocation: gpsResult.location,
+        ipLocation: {
+          ...ipResult.location!,
+          country: ipCountry,
+          city: ipResult.city
+        }
+      };
     } catch (error) {
       return {
         hasMismatch: false,

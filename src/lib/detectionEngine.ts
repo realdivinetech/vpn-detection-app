@@ -1,7 +1,6 @@
 import { BrowserFingerprinting } from './fingerprinting';
 import { WebRTCLeak } from './webrtcLeak';
 import { LocationMismatch } from './locationMismatch';
-import { BehaviorAnalysis } from './behaviorAnalysis';
 import { apiClient } from './apiClient';
 import { DetectionResult, DetectionResults } from '@/types/detection';
 
@@ -18,9 +17,7 @@ export class DetectionEngine {
 
   async runFullDetection(): Promise<DetectionResult> {
     const startTime = Date.now();
-    
     try {
-      // Run all detection methods in parallel
       const [
         ipAnalysis,
         webrtcResult,
@@ -29,14 +26,7 @@ export class DetectionEngine {
         botDetection
       ] = await Promise.all([
         this.runIpAnalysis(),
-        (async () => {
-          const webrtcResult = await this.webrtcLeak.detectLeak();
-          // Ensure localIpCountry is present (fallback to empty string if missing)
-          return {
-            localIpCountry: (webrtcResult as any).localIpCountry ?? '',
-            ...webrtcResult
-          };
-        })(),
+        this.webrtcLeak.detectLeak(),
         this.fingerprinting.generateFingerprint(),
         this.locationMismatch.checkLocationMismatch(),
         this.runBotDetection()
@@ -44,7 +34,10 @@ export class DetectionEngine {
 
       const results: DetectionResults = {
         ipAnalysis,
-        webrtcLeak: webrtcResult,
+        webrtcLeak: {
+          ...webrtcResult,
+          localIpCountry: webrtcResult.localIpCountry ?? 'Unknown'
+        },
         fingerprint: {
           ...fingerprintResult,
           languages: Array.from(fingerprintResult.languages)
@@ -53,12 +46,8 @@ export class DetectionEngine {
         botDetection
       };
 
-      // Calculate overall detection result
       const detectionResult = this.calculateOverallResult(results);
-      
-      // Log the detection result
       await this.logDetection(detectionResult, Date.now() - startTime);
-
       return detectionResult;
     } catch (error) {
       console.error('Detection engine error:', error);
@@ -66,8 +55,42 @@ export class DetectionEngine {
     }
   }
 
+  // --- Helper functions for continent/timezone mapping ---
+  private timezoneToContinent(timezone: string): string | null {
+    if (!timezone) return null;
+    if (timezone.startsWith('Africa')) return 'Africa';
+    if (timezone.startsWith('America')) return 'North America';
+    if (timezone.startsWith('Europe')) return 'Europe';
+    if (timezone.startsWith('Asia')) return 'Asia';
+    if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
+    if (timezone.startsWith('Antarctica')) return 'Antarctica';
+    return null;
+  }
+
+  private countryToContinent(countryCode: string): string | null {
+    const mapping: Record<string, string> = {
+      'US': 'North America',
+      'CA': 'North America',
+      'MX': 'North America',
+      'BR': 'South America',
+      'AR': 'South America',
+      'GB': 'Europe',
+      'FR': 'Europe',
+      'DE': 'Europe',
+      'NG': 'Africa',
+      'ZA': 'Africa',
+      'EG': 'Africa',
+      'CN': 'Asia',
+      'JP': 'Asia',
+      'IN': 'Asia',
+      'AU': 'Oceania',
+      'NZ': 'Oceania'
+      // Add more as needed
+    };
+    return mapping[countryCode.toUpperCase()] || null;
+  }
+
   private getTimezoneFromCountryCode(countryCode: string): string {
-    // Basic mapping of country codes to timezones (can be expanded)
     const countryTimezoneMap: Record<string, string> = {
       'US': 'America/New_York',
       'CA': 'America/Toronto',
@@ -88,6 +111,174 @@ export class DetectionEngine {
       // Add more as needed
     };
     return countryTimezoneMap[countryCode.toUpperCase()] || 'Unknown';
+  }
+
+  // --- Main detection scoring logic ---
+  private calculateOverallResult(results: DetectionResults): DetectionResult {
+    let confidenceScore = 0;
+    const detectedTypes: string[] = [];
+    const riskFactors: string[] = [];
+
+    // Helper function to check if IP is private
+    const isPrivateIp = (ip: string): boolean => {
+      return /^10\./.test(ip) || /^192\.168\./.test(ip) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
+    };
+
+    // IP Analysis scoring - increased weights for stronger signals
+    if (results.ipAnalysis) {
+      if (results.ipAnalysis.isDatacenter) {
+        confidenceScore += 40; // increased from 30
+        detectedTypes.push('Datacenter IP');
+        riskFactors.push('IP hosted in datacenter');
+      }
+      if (results.ipAnalysis.isHosting) {
+        confidenceScore += 35; // increased from 25
+        detectedTypes.push('Hosting Provider');
+        riskFactors.push('Hosting provider IP');
+      }
+      if (results.ipAnalysis.isTor) {
+        confidenceScore += 50; // increased from 40
+        detectedTypes.push('Tor Exit Node');
+        riskFactors.push('Tor network detected');
+      }
+      if (results.ipAnalysis.vpnDetected) {
+        confidenceScore += 60; // increased from 50
+        detectedTypes.push('VPN Server Detected');
+        riskFactors.push('IP identified as VPN server by WhatIsMyIpAddress');
+      }
+      if (results.ipAnalysis.blacklisted) {
+        confidenceScore += 40; // increased from 30
+        detectedTypes.push('Blacklisted IP');
+        riskFactors.push('IP listed on blacklist by WhatIsMyIpAddress');
+      }
+      confidenceScore += results.ipAnalysis.riskScore * 0.5; // increased weight from 0.3 to 0.5
+    }
+
+    // WebRTC Leak scoring - increased weights and refined mismatch check
+    if (results.webrtcLeak?.hasLeak) {
+      confidenceScore += 45; // increased from 35
+      detectedTypes.push('WebRTC Leak');
+      riskFactors.push('Local IP leak detected');
+      const localIp = results.webrtcLeak.localIps[0] || '';
+      const publicIpCountry = results.ipAnalysis?.country || '';
+      const localIpCountry = results.webrtcLeak.localIpCountry || '';
+      if (
+        typeof localIp === 'string' &&
+        isPrivateIp(localIp) &&
+        localIpCountry &&
+        publicIpCountry &&
+        localIpCountry !== publicIpCountry
+      ) {
+        confidenceScore += 50; // increased from 40
+        detectedTypes.push('WebRTC Local IP Country Mismatch');
+        riskFactors.push('Mismatch between WebRTC local IP country and public IP country');
+      }
+    }
+
+    // Browser Fingerprint scoring - adjusted weights and added threshold for suspicion
+    if (results.fingerprint) {
+      const fingerprintTimezone = results.fingerprint.timezone;
+      let ipTimezone = results.ipAnalysis?.timezone;
+
+      // Fallback to timezone from country code if missing
+      if ((!ipTimezone || ipTimezone === 'Unknown') && results.ipAnalysis?.country) {
+        const countryParts = results.ipAnalysis.country.trim().split(' ');
+        let countryCode = countryParts[countryParts.length - 1];
+        if (countryCode.length > 3) countryCode = '';
+        if (countryCode) {
+          ipTimezone = this.getTimezoneFromCountryCode(countryCode);
+        }
+      }
+
+      // Timezone mismatch
+      if (
+        fingerprintTimezone !== ipTimezone &&
+        ipTimezone !== 'Unknown' &&
+        fingerprintTimezone !== 'Unknown'
+      ) {
+        confidenceScore += 50; // increased from 40
+        detectedTypes.push('Fingerprint Timezone Mismatch');
+        riskFactors.push('Mismatch between browser fingerprint timezone and IP location timezone');
+      }
+
+      // Continent mismatch
+      const fingerprintContinent = this.timezoneToContinent(fingerprintTimezone);
+      const ipCountryCode = results.ipAnalysis?.country
+        ? results.ipAnalysis.country.split(' ').pop() || ''
+        : '';
+      const ipContinent = this.countryToContinent(ipCountryCode);
+
+      if (
+        fingerprintContinent &&
+        ipContinent &&
+        fingerprintContinent !== ipContinent
+      ) {
+        confidenceScore += 50; // increased from 40
+        detectedTypes.push('Fingerprint Continent Mismatch');
+        riskFactors.push('Mismatch between browser fingerprint continent and IP location continent');
+      }
+
+      confidenceScore += results.fingerprint.suspicionScore * 0.5; // increased weight from 0.4 to 0.5
+      if (results.fingerprint.suspicionScore > 60) { // lowered threshold from 70
+        detectedTypes.push('Suspicious Fingerprint');
+        riskFactors.push('Abnormal browser fingerprint');
+      }
+    }
+
+    // Location Mismatch scoring - increased weight
+    if (
+      results.locationMismatch &&
+      results.locationMismatch.hasMismatch === true
+    ) {
+      confidenceScore += 50; // increased from 40
+      detectedTypes.push('Location Mismatch');
+      riskFactors.push((results.locationMismatch as any).message || 'Location mismatch detected');
+    }
+
+    // Bot Detection scoring - increased weight and lowered threshold for detection
+    if (results.botDetection?.isBot) {
+      confidenceScore += 45; // increased from 35
+      detectedTypes.push('Bot/Automation');
+      riskFactors.push('Automated browser detected');
+    }
+
+    // Cap confidence score at 100
+    confidenceScore = Math.min(100, Math.round(confidenceScore));
+
+    // Force VPN detection if critical flags are true
+    const fingerprintMismatch = (() => {
+      if (!results.fingerprint || !results.ipAnalysis) return false;
+      const fingerprintTimezone = results.fingerprint.timezone;
+      const ipTimezone = results.ipAnalysis.timezone;
+      const fingerprintContinent = this.timezoneToContinent(fingerprintTimezone);
+      const ipCountryCode = (results.ipAnalysis.country?.split(' ').pop() || '');
+      const ipContinent = this.countryToContinent(ipCountryCode);
+      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
+        return true;
+      }
+      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
+        return true;
+      }
+      return false;
+    })();
+
+    const isVpnDetected = confidenceScore >= 50;
+
+    console.log('Critical Flags:', {
+      webrtcLeak: results.webrtcLeak?.hasLeak,
+      locationMismatch: results.locationMismatch?.hasMismatch,
+      botDetection: results.botDetection?.isBot,
+      fingerprintMismatch
+    });
+
+    return {
+      isVpnDetected,
+      confidenceScore,
+      detectedTypes,
+      riskFactors,
+      results,
+      timestamp: new Date().toISOString()
+    };
   }
 
   private async analyzeWithWhatIsMyIpAddress(ip: string) {
@@ -157,99 +348,48 @@ export class DetectionEngine {
       // Use Promise.allSettled to try all services
       const results = await Promise.allSettled(services);
 
-      // Try to find the first result with a valid IP
-      let firstIpResult: any = null;
-      let foundValidIp = false;
-      for (const result of results) {
-        if (result.status === 'fulfilled' && result.value.publicIp && result.value.publicIp !== 'Unknown') {
-          // Fallback timezone logic
-          if (!('timezone' in result.value) || !result.value.timezone || result.value.timezone === 'Unknown') {
-            const countryCode = result.value.country ? result.value.country.split(' ').pop() : '';
-            if (countryCode) {
-              (result.value as any).timezone = this.getTimezoneFromCountryCode(countryCode);
-            }
-          }
-          // Enrich with WhatIsMyIpAddress data
-          const whatIsMyIpData = await this.analyzeWithWhatIsMyIpAddress(result.value.publicIp);
-          (result.value as any).vpnDetected = whatIsMyIpData.vpnDetected;
-          (result.value as any).blacklisted = whatIsMyIpData.blacklisted;
-          return result.value;
-        }
-        // Save the first result that has a publicIp, even if it's 'Unknown'
-        if (result.status === 'fulfilled' && result.value.publicIp) {
-          firstIpResult = result.value;
-        }
+      // Collect all fulfilled results
+      const fulfilled = results
+        .filter(r => r.status === 'fulfilled')
+        .map(r => (r as PromiseFulfilledResult<any>).value);
+
+      // Merge results: prefer first non-Unknown value for each field
+      const merged: any = {};
+      const fields = [
+        'publicIp', 'country', 'city', 'region', 'hostname', 'isp', 'organization',
+        'asn', 'asnOrg', 'isDatacenter', 'isHosting', 'isTor', 'isProxy', 'riskScore',
+        'latitude', 'longitude', 'timezone', 'connectionType', 'sharedConnection',
+        'dynamicConnection', 'securityScanner', 'trustedNetwork', 'frequentAbuser',
+        'highRiskAttacks', 'vpnDetected', 'blacklisted'
+      ];
+      for (const field of fields) {
+        merged[field] = fulfilled.map(r => r[field]).find(v => v !== undefined && v !== null && v !== 'Unknown');
       }
 
-      // Always try the fallback if no valid IP was found
-      try {
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
-        if (ipResponse.ok) {
-          const ipData = await ipResponse.json();
-          if (ipData.ip) {
-            return {
-              publicIp: ipData.ip,
-              country: 'Unknown',
-              city: 'Unknown',
-              region: 'Unknown',
-              hostname: 'Unknown',
-              isp: 'Unknown',
-              organization: 'Unknown',
-              asn: null,
-              asnOrg: 'Unknown',
-              isDatacenter: false,
-              isHosting: false,
-              isTor: false,
-              isProxy: false,
-              riskScore: 0,
-              latitude: null,
-              longitude: null,
-              timezone: 'Unknown',
-              connectionType: 'Unknown',
-              sharedConnection: 'Unknown',
-              dynamicConnection: 'Unknown',
-              securityScanner: 'No',
-              trustedNetwork: 'Unknown',
-              frequentAbuser: 'Unknown',
-              highRiskAttacks: 'Unknown',
-              vpnDetected: false,
-              blacklisted: false
-            };
+      // If still missing publicIp, fallback to ipify
+      if (!merged.publicIp) {
+        try {
+          const ipResponse = await fetch('https://api.ipify.org?format=json');
+          if (ipResponse.ok) {
+            const ipData = await ipResponse.json();
+            if (ipData.ip) merged.publicIp = ipData.ip;
           }
-        }
-      } catch (ipOnlyError) {
-        // Ignore, fallback below
+        } catch {}
       }
 
-      // If all services and fallback fail, return fallback
-      return {
-        publicIp: 'Unknown',
-        country: 'Unknown',
-        city: 'Unknown',
-        region: 'Unknown',
-        hostname: 'Unknown',
-        isp: 'Unknown',
-        organization: 'Unknown',
-        asn: null,
-        asnOrg: 'Unknown',
-        isDatacenter: false,
-        isHosting: false,
-        isTor: false,
-        isProxy: false,
-        riskScore: 0,
-        latitude: null,
-        longitude: null,
-        timezone: 'Unknown',
-        connectionType: 'Unknown',
-        sharedConnection: 'Unknown',
-        dynamicConnection: 'Unknown',
-        securityScanner: 'No',
-        trustedNetwork: 'Unknown',
-        frequentAbuser: 'Unknown',
-        highRiskAttacks: 'Unknown',
-        vpnDetected: false,
-        blacklisted: false
-      };
+      // If still missing, fill with 'Unknown'
+      for (const field of fields) {
+        if (merged[field] === undefined) merged[field] = 'Unknown';
+      }
+
+      // Enrich with WhatIsMyIpAddress data if possible
+      if (merged.publicIp && merged.publicIp !== 'Unknown') {
+        const whatIsMyIpData = await this.analyzeWithWhatIsMyIpAddress(merged.publicIp);
+        merged.vpnDetected = whatIsMyIpData.vpnDetected;
+        merged.blacklisted = whatIsMyIpData.blacklisted;
+      }
+
+      return merged;
     } catch (error) {
       console.error('IP analysis failed:', error);
       return {
@@ -340,228 +480,7 @@ export class DetectionEngine {
     }
   }
 
-  private calculateOverallResult(results: DetectionResults): DetectionResult {
-    let confidenceScore = 0;
-    const detectedTypes: string[] = [];
-    const riskFactors: string[] = [];
-
-    // Helper function to check if IP is private
-    const isPrivateIp = (ip: string): boolean => {
-      return /^10\./.test(ip) || /^192\.168\./.test(ip) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
-    };
-
-    // Helper function to map timezone to continent
-    const timezoneToContinent = (timezone: string): string | null => {
-      if (!timezone) return null;
-      if (timezone.startsWith('Africa')) return 'Africa';
-      if (timezone.startsWith('America')) return 'North America';
-      if (timezone.startsWith('Europe')) return 'Europe';
-      if (timezone.startsWith('Asia')) return 'Asia';
-      if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
-      return null;
-    };
-
-    // Helper function to map country code to continent
-    const countryToContinent = (countryCode: string): string | null => {
-      const mapping: Record<string, string> = {
-        'US': 'North America',
-        'CA': 'North America',
-        'MX': 'North America',
-        'BR': 'South America',
-        'AR': 'South America',
-        'GB': 'Europe',
-        'FR': 'Europe',
-        'DE': 'Europe',
-        'NG': 'Africa',
-        'ZA': 'Africa',
-        'EG': 'Africa',
-        'CN': 'Asia',
-        'JP': 'Asia',
-        'IN': 'Asia',
-        'AU': 'Oceania',
-        'NZ': 'Oceania'
-        // Add more as needed
-      };
-      return mapping[countryCode.toUpperCase()] || null;
-    };
-
-    // IP Analysis scoring
-    if (results.ipAnalysis) {
-      if (results.ipAnalysis.isDatacenter) {
-        confidenceScore += 30;
-        detectedTypes.push('Datacenter IP');
-        riskFactors.push('IP hosted in datacenter');
-      }
-      if (results.ipAnalysis.isHosting) {
-        confidenceScore += 25;
-        detectedTypes.push('Hosting Provider');
-        riskFactors.push('Hosting provider IP');
-      }
-      if (results.ipAnalysis.isTor) {
-        confidenceScore += 40;
-        detectedTypes.push('Tor Exit Node');
-        riskFactors.push('Tor network detected');
-      }
-      if (results.ipAnalysis.vpnDetected) {
-        confidenceScore += 50;
-        detectedTypes.push('VPN Server Detected');
-        riskFactors.push('IP identified as VPN server by WhatIsMyIpAddress');
-      }
-      if (results.ipAnalysis.blacklisted) {
-        confidenceScore += 30;
-        detectedTypes.push('Blacklisted IP');
-        riskFactors.push('IP listed on blacklist by WhatIsMyIpAddress');
-      }
-      confidenceScore += results.ipAnalysis.riskScore * 0.3;
-    }
-
-    // WebRTC Leak scoring - increased weight
-    if (results.webrtcLeak?.hasLeak) {
-      confidenceScore += 35;
-      detectedTypes.push('WebRTC Leak');
-      riskFactors.push('Local IP leak detected');
-
-      // New logic: compare WebRTC local IP country with public IP country
-      const localIp = results.webrtcLeak.localIps[0] || '';
-      const publicIpCountry = results.ipAnalysis?.country || '';
-      const localIpCountry = results.webrtcLeak.localIpCountry || '';
-
-      // If local IP is private and countries differ, increase confidence and add detected type
-      if (
-        typeof localIp === 'string' &&
-        isPrivateIp(localIp) &&
-        localIpCountry &&
-        publicIpCountry &&
-        localIpCountry !== publicIpCountry
-      ) {
-        confidenceScore += 40;
-        detectedTypes.push('WebRTC Local IP Country Mismatch');
-        riskFactors.push('Mismatch between WebRTC local IP country and public IP country');
-      }
-    }
-
-    // Browser Fingerprint scoring
-    if (results.fingerprint) {
-      // Check for timezone mismatch between fingerprint and IP location
-      const fingerprintTimezone = results.fingerprint.timezone;
-      let ipTimezone = results.ipAnalysis?.timezone;
-
-      // If IP timezone is unknown, fallback to timezone from IP country
-      if ((!ipTimezone || ipTimezone === 'Unknown') && results.ipAnalysis?.country) {
-        const countryCode = results.ipAnalysis.country.split(' ').pop() || '';
-        ipTimezone = this.getTimezoneFromCountryCode(countryCode);
-      }
-
-      let timezoneMismatch = false;
-      let continentMismatch = false;
-
-      if (
-        fingerprintTimezone &&
-        ipTimezone &&
-        fingerprintTimezone !== ipTimezone &&
-        ipTimezone !== 'Unknown' &&
-        fingerprintTimezone !== 'Unknown'
-      ) {
-        timezoneMismatch = true;
-        confidenceScore += 40; // Increased from 20 to 40
-        detectedTypes.push('Fingerprint Timezone Mismatch');
-        riskFactors.push('Mismatch between browser fingerprint timezone and IP location timezone');
-      }
-
-      // Check for continent mismatch between fingerprint and IP location
-      const fingerprintContinent = timezoneToContinent(fingerprintTimezone);
-      const ipCountryCode = results.ipAnalysis?.country?.split(' ').pop() || '';
-      const ipContinent = countryToContinent(ipCountryCode);
-
-      if (
-        fingerprintContinent &&
-        ipContinent &&
-        fingerprintContinent !== ipContinent &&
-        ipContinent !== null &&
-        fingerprintContinent !== null
-      ) {
-        continentMismatch = true;
-        confidenceScore += 40; // Increased from 20 to 40
-        detectedTypes.push('Fingerprint Continent Mismatch');
-        riskFactors.push('Mismatch between browser fingerprint continent and IP location continent');
-      }
-
-      confidenceScore += results.fingerprint.suspicionScore * 0.4;
-      if (results.fingerprint.suspicionScore > 70) {
-        detectedTypes.push('Suspicious Fingerprint');
-        riskFactors.push('Abnormal browser fingerprint');
-      }
-    }
-
-    // Location Mismatch scoring - increased weight
-    if (
-      results.locationMismatch &&
-      results.locationMismatch.hasMismatch === true
-    ) {
-      confidenceScore += 40;
-      detectedTypes.push('Location Mismatch');
-      riskFactors.push((results.locationMismatch as any).message || 'Location mismatch detected');
-    }
-    // Optionally, you can log or display the message and distance for 'good' and 'fair' matches
-
-    // Bot Detection scoring
-    if (results.botDetection?.isBot) {
-      confidenceScore += 35;
-      detectedTypes.push('Bot/Automation');
-      riskFactors.push('Automated browser detected');
-    }
-
-    // Cap confidence score at 100
-    confidenceScore = Math.min(100, Math.round(confidenceScore));
-
-    // Force VPN detection if critical flags are true
-    const fingerprintMismatch = (() => {
-      if (!results.fingerprint || !results.ipAnalysis) return false;
-
-      const fingerprintTimezone = results.fingerprint.timezone;
-      const ipTimezone = results.ipAnalysis.timezone;
-      const fingerprintContinent = timezoneToContinent(fingerprintTimezone);
-      const ipCountryCode = results.ipAnalysis.country?.split(' ').pop() || '';
-      const ipContinent = countryToContinent(ipCountryCode);
-
-      if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
-        return true;
-      }
-
-      if (fingerprintContinent && ipContinent && fingerprintContinent !== ipContinent) {
-        return true;
-      }
-
-      return false;
-    })();
-
-    const criticalFlags = [
-      results.webrtcLeak?.hasLeak,
-      results.locationMismatch?.hasMismatch,
-      results.botDetection?.isBot,
-      fingerprintMismatch
-    ];
-
-    const isVpnDetected = confidenceScore >= 50;
-
-    console.log('Critical Flags:', {
-      webrtcLeak: results.webrtcLeak?.hasLeak,
-      locationMismatch: results.locationMismatch?.hasMismatch,
-      botDetection: results.botDetection?.isBot,
-      fingerprintMismatch
-    });
-
-    return {
-      isVpnDetected,
-      confidenceScore,
-      detectedTypes,
-      riskFactors,
-      results,
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  private async analyzeWithIpApi() {
+    private async analyzeWithIpApi() {
     try {
       const response = await fetch('https://ip-api.com/json/?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,proxy,hosting', {
         method: 'GET',
@@ -671,7 +590,8 @@ export class DetectionEngine {
 
   private async analyzeWithIpGeolocation() {
     try {
-      const response = await fetch('https://api.ipgeolocation.io/ipgeo?apiKey=free', {
+      // Removed invalid API key "free" to test if service works without key
+      const response = await fetch('https://api.ipgeolocation.io/ipgeo', {
         signal: AbortSignal.timeout(5000)
       });
       
