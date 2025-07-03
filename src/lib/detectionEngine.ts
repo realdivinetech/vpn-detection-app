@@ -150,7 +150,8 @@ export class DetectionEngine {
       const services = [
         this.analyzeWithIpApi(),
         this.analyzeWithIpify(),
-        this.analyzeWithIpGeolocation()
+        this.analyzeWithIpGeolocation(),
+        this.analyzeWithIpInfo()
       ];
 
       // Use Promise.allSettled to try all services
@@ -240,6 +241,63 @@ export class DetectionEngine {
         vpnDetected: false,
         blacklisted: false
       };
+    }
+  }
+
+  private async analyzeWithIpInfo() {
+    try {
+      const token = ''; // Add your ipinfo.io token here if available
+      const url = token ? `https://ipinfo.io/json?token=${token}` : 'https://ipinfo.io/json';
+      const response = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(5000) });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const [lat, lon] = data.loc ? data.loc.split(',').map(Number) : [null, null];
+      const isDatacenter = this.isDatacenterProvider(data.org || '', data.org || '');
+      const isHosting = this.isHostingProvider(data.org || '', data.org || '');
+      const riskScore = this.calculateRiskScore(data, isDatacenter, isHosting);
+
+      // Additional fallback for timezone if missing or unknown
+      let timezone = data.timezone || 'Unknown';
+      if (timezone === 'Unknown' && data.country) {
+        timezone = this.getTimezoneFromCountryCode(data.country);
+      }
+
+      return {
+        publicIp: data.ip || 'Unknown',
+        country: data.country_name || data.country || 'Unknown',
+        city: data.city || 'Unknown',
+        region: data.region || 'Unknown',
+        hostname: data.hostname || 'Unknown',
+        isp: data.org || 'Unknown',
+        organization: data.org || 'Unknown',
+        asn: data.asn ? parseInt(data.asn.replace('AS', '')) : null,
+        asnOrg: data.org || 'Unknown',
+        isDatacenter,
+        isHosting,
+        isTor: false,
+        isProxy: riskScore > 70,
+        riskScore,
+        latitude: lat,
+        longitude: lon,
+        timezone,
+        connectionType: 'Unknown',
+        sharedConnection: 'Unknown',
+        dynamicConnection: 'Unknown',
+        securityScanner: 'No',
+        trustedNetwork: 'Unknown',
+        frequentAbuser: 'Unknown',
+        highRiskAttacks: 'Unknown',
+        vpnDetected: false,
+        blacklisted: false
+      };
+    } catch (error) {
+      console.error('IpInfo service failed:', error);
+      throw error;
     }
   }
 
@@ -518,6 +576,12 @@ export class DetectionEngine {
       const isHosting = this.isHostingProvider(geoData.org, geoData.org);
       const riskScore = this.calculateRiskScore(geoData, isDatacenter, isHosting);
 
+      // Additional fallback for timezone if missing or unknown
+      let timezone = geoData.timezone || 'Unknown';
+      if (timezone === 'Unknown' && geoData.country_code) {
+        timezone = this.getTimezoneFromCountryCode(geoData.country_code);
+      }
+
       return {
         publicIp: ipData.ip,
         country: geoData.country_name,
@@ -531,7 +595,8 @@ export class DetectionEngine {
         isProxy: riskScore > 70,
         riskScore,
         latitude: geoData.latitude,
-        longitude: geoData.longitude
+        longitude: geoData.longitude,
+        timezone
       };
     } catch (error) {
       console.error('Ipify service failed:', error);

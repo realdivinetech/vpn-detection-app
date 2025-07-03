@@ -139,12 +139,6 @@ The overall detection confidence score is calculated by combining weighted facto
   - Includes distance mismatch (>100 km) and country mismatch between GPS and IP location.
 - Bot/Automation Detection (+35)
 
-The confidence score is capped at 100. A VPN/proxy detection is flagged if the confidence score is 50 or higher, or if any critical flags (WebRTC leak, location mismatch, bot detection, fingerprint mismatch) are true.
-**Confidence Levels:**
-- 0-30%: Low risk (likely legitimate user)
-- 31-50%: Medium risk (requires attention)
-- 51-70%: High risk (likely using anonymization)
-- 71-100%: Very high risk (confirmed VPN/proxy)
 
 ## Fallback Logic
 
@@ -180,12 +174,13 @@ This project integrates with several free IP analysis services:
 - **ipapi.co**: IP geolocation service
 - **ipgeolocation.io**: Professional IP analysis
 - **check.getipintel.net**: Professional IP Proxy Detection
+- **IPinfo.io**: Ip check
 
 *Note: Some services may have rate limits. Consider upgrading to paid plans for production use.*
 
 ## 📊 Performance
 
-- **Detection Speed**: < 5 seconds average scan time
+- **Detection Speed**: < 9 seconds average scan time
 - **Accuracy**: 95%+ detection rate for common VPN services
 - **Reliability**: 3-tier fallback system ensures 99.9% uptime
 - **Mobile Support**: Optimized for all device types

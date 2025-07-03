@@ -101,12 +101,12 @@ export default function VpnDetector() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6" role="main" aria-label="VPN Proxy Detection System">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center space-y-4">
+        <header className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <Shield className="h-12 w-12 text-blue-600" />
+            <Shield className="h-12 w-12 text-blue-600" aria-hidden="true" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               VPN/Proxy Detection System
             </h1>
@@ -117,7 +117,7 @@ export default function VpnDetector() {
           <div className="text-sm text-muted-foreground">
             By <strong>Defi Xpert and Divine Tech</strong> (realdivinetech)
           </div>
-        </div>
+        </header>
 
         {/* Admin Panel Toggle - Disabled */}
         <Card className="border-blue-200 bg-blue-50 opacity-50 pointer-events-none">
@@ -232,6 +232,6 @@ export default function VpnDetector() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

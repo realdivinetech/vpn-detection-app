@@ -10,6 +10,7 @@ export class WebRTCLeak {
   async detectLeak(): Promise<{
     hasLeak: boolean;
     localIps: string[];
+    localIpCountry?: string;
     publicIp?: string;
     stunServersUsed: string[];
   }> {
@@ -19,13 +20,25 @@ export class WebRTCLeak {
       let completedChecks = 0;
       const totalChecks = this.stunServers.length;
 
-      const handleComplete = () => {
+      const handleComplete = async () => {
         completedChecks++;
         if (completedChecks >= totalChecks) {
           const uniqueLocalIps = [...new Set(localIps)];
+          let localIpCountry = '';
+          if (uniqueLocalIps.length > 0) {
+            try {
+              const response = await fetch(`https://ipapi.co/${uniqueLocalIps[0]}/country/`);
+              if (response.ok) {
+                localIpCountry = await response.text();
+              }
+            } catch {
+              // ignore errors
+            }
+          }
           resolve({
             hasLeak: uniqueLocalIps.length > 0,
             localIps: uniqueLocalIps,
+            localIpCountry,
             stunServersUsed
           });
         }
@@ -97,11 +110,25 @@ export class WebRTCLeak {
       setTimeout(() => {
         if (completedChecks < totalChecks) {
           const uniqueLocalIps = [...new Set(localIps)];
-          resolve({
-            hasLeak: uniqueLocalIps.length > 0,
-            localIps: uniqueLocalIps,
-            stunServersUsed
-          });
+          let localIpCountry = '';
+          (async () => {
+            if (uniqueLocalIps.length > 0) {
+              try {
+                const response = await fetch(`https://ipapi.co/${uniqueLocalIps[0]}/country/`);
+                if (response.ok) {
+                  localIpCountry = await response.text();
+                }
+              } catch {
+                // ignore errors
+              }
+            }
+            resolve({
+              hasLeak: uniqueLocalIps.length > 0,
+              localIps: uniqueLocalIps,
+              localIpCountry,
+              stunServersUsed
+            });
+          })();
         }
       }, 5000);
     });

@@ -12,15 +12,17 @@ interface DetectionResultProps {
 
 export default function DetectionResult({ result }: DetectionResultProps) {
   const getThreatLevel = () => {
-    if (result.confidenceScore >= 80) return { level: 'High', color: 'text-red-600', bg: 'bg-red-50' };
+    if (result.confidenceScore >= 90) return { level: 'Critical', color: 'text-red-700', bg: 'bg-red-100' };
+    if (result.confidenceScore >= 75) return { level: 'High', color: 'text-red-600', bg: 'bg-red-50' };
     if (result.confidenceScore >= 50) return { level: 'Medium', color: 'text-yellow-600', bg: 'bg-yellow-50' };
-    return { level: 'Low', color: 'text-green-600', bg: 'bg-green-50' };
+    if (result.confidenceScore >= 25) return { level: 'Low', color: 'text-green-700', bg: 'bg-green-100' };
+    return { level: 'Very Low', color: 'text-green-600', bg: 'bg-green-50' };
   };
 
   const threat = getThreatLevel();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-2 md:px-0">
       {/* Overall Result */}
       <Card className={`border-2 ${result.isVpnDetected ? 'border-red-200' : 'border-green-200'}`}>
         <CardHeader>
@@ -40,7 +42,28 @@ export default function DetectionResult({ result }: DetectionResultProps) {
               {result.isVpnDetected ? 'VPN/Proxy Detected' : 'Clean Connection'}
             </Badge>
           </div>
-          
+
+          {result.confidenceScore < 30 && (
+            <p className="text-sm text-green-700 mt-1">
+              Low confidence in VPN detection. Connection appears clean.
+            </p>
+          )}
+          {result.confidenceScore >= 30 && result.confidenceScore < 50 && (
+            <p className="text-sm text-yellow-700 mt-1">
+              Moderate confidence in VPN detection. Further verification recommended.
+            </p>
+          )}
+          {result.confidenceScore >= 50 && result.confidenceScore < 75 && (
+            <p className="text-sm text-yellow-800 mt-1">
+              High confidence in VPN detection. Consider additional security measures.
+            </p>
+          )}
+          {result.confidenceScore >= 75 && (
+            <p className="text-sm text-red-700 mt-1">
+              Critical confidence in VPN detection. Immediate action recommended.
+            </p>
+          )}
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-medium">Confidence Score:</span>
@@ -70,9 +93,9 @@ export default function DetectionResult({ result }: DetectionResultProps) {
       </Card>
 
       {/* Detailed Results */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* IP Analysis */}
-        <Card>
+        <Card className="overflow-x-auto">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Network className="w-4 h-4" />
@@ -168,7 +191,7 @@ export default function DetectionResult({ result }: DetectionResultProps) {
         </Card>
 
         {/* WebRTC Leak */}
-        <Card>
+        <Card className="overflow-x-auto">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Network className="w-4 h-4" />
@@ -198,7 +221,7 @@ export default function DetectionResult({ result }: DetectionResultProps) {
         </Card>
 
         {/* Browser Fingerprint */}
-        <Card>
+        <Card className="overflow-x-auto">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Fingerprint className="w-4 h-4" />
@@ -230,7 +253,7 @@ export default function DetectionResult({ result }: DetectionResultProps) {
         </Card>
 
         {/* Location Mismatch */}
-        <Card>
+        <Card className="overflow-x-auto">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
@@ -262,7 +285,7 @@ export default function DetectionResult({ result }: DetectionResultProps) {
 
       {/* Bot Detection Results */}
       {result.results.botDetection && (
-        <Card>
+        <Card className="overflow-x-auto">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bot className="w-4 h-4" />
