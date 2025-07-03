@@ -101,35 +101,35 @@ export default function VpnDetector() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6" role="main" aria-label="VPN Proxy Detection System">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-2 sm:p-4 md:p-6" role="main" aria-label="VPN Proxy Detection System">
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <header className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <Shield className="h-12 w-12 text-blue-600" aria-hidden="true" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <header className="text-center space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
+            <Shield className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" aria-hidden="true" />
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               VPN/Proxy Detection System
             </h1>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Advanced multi-layer detection system to identify VPN, proxy, and anonymization services
           </p>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs sm:text-sm text-muted-foreground">
             By <strong>Defi Xpert and Divine Tech</strong> (realdivinetech)
           </div>
         </header>
 
         {/* Admin Panel Toggle - Disabled */}
         <Card className="border-blue-200 bg-blue-50 opacity-50 pointer-events-none">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="pt-4 sm:pt-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
               <div className="flex items-center space-x-2">
                 <Settings className="h-5 w-5 text-blue-600" />
                 <div>
                   <Label htmlFor="admin-toggle" className="text-base font-medium text-blue-900">
                     Admin Dashboard (Disabled)
                   </Label>
-                  <p className="text-sm text-blue-700">Admin panel access is currently disabled For Security Reasons</p>
+                  <p className="text-xs sm:text-sm text-blue-700">Admin panel access is currently disabled For Security Reasons</p>
                 </div>
               </div>
               <Switch
@@ -145,7 +145,7 @@ export default function VpnDetector() {
 
         {/* Main Detection Interface */}
         <Card className="border-0 shadow-xl">
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2 sm:pb-4">
             <CardTitle className="flex items-center gap-2">
               <Play className="h-5 w-5" />
               Detection Control Panel
@@ -154,13 +154,13 @@ export default function VpnDetector() {
               Start a comprehensive scan to detect VPN, proxy, and other anonymization services
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             <div className="text-center">
               <Button 
                 onClick={startDetection} 
                 disabled={isScanning}
                 size="lg"
-                className="px-8 py-3 text-lg"
+                className="px-6 py-2 sm:px-8 sm:py-3 text-base sm:text-lg"
               >
                 {isScanning ? (
                   <>
@@ -174,17 +174,17 @@ export default function VpnDetector() {
             </div>
 
             {isScanning && (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">{currentStep}</p>
-                  <Progress value={progress} className="w-full max-w-md mx-auto" />
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">{currentStep}</p>
+                  <Progress value={progress} className="w-full max-w-xs sm:max-w-md mx-auto" />
                   <p className="text-xs text-muted-foreground mt-1">{Math.round(progress)}% Complete</p>
                 </div>
               </div>
             )}
 
             {/* Detection Methods Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
               <DetectionCard
                 title="IP Analysis"
                 description="ASN, geolocation, and hosting detection"
@@ -227,7 +227,7 @@ export default function VpnDetector() {
 
         {/* Detection Results */}
         {result && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <DetectionResultComponent result={result} />
           </div>
         )}
