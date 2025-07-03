@@ -46,6 +46,7 @@ export interface IpAnalysisResult {
 }
 
 export interface WebRTCLeakResult {
+  localIpCountry: string;
   hasLeak: boolean;
   localIps: string[];
   publicIp?: string;

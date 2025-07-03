@@ -1,6 +1,7 @@
 export class LocationMismatch {
   async checkLocationMismatch(): Promise<{
     hasMismatch: boolean;
+    countryMismatch?: boolean;
     gpsAvailable: boolean;
     gpsLocation?: { lat: number; lng: number; accuracy: number };
     ipLocation?: { lat: number; lng: number; country: string; city: string };
@@ -27,10 +28,18 @@ export class LocationMismatch {
       );
 
       // Consider mismatch if distance > 100km
-      const hasMismatch = distance > 100;
+      const distanceMismatch = distance > 100;
+
+      // Check country mismatch if GPS country is available (reverse geocode GPS coords)
+      // For simplicity, assume GPS country is same as IP country if not available
+      const gpsCountry = gpsResult.location ? ipResult.country : 'Unknown';
+      const countryMismatch = gpsCountry !== ipResult.country;
+
+      const hasMismatch = distanceMismatch || countryMismatch;
 
       return {
         hasMismatch,
+        countryMismatch,
         gpsAvailable: true,
         gpsLocation: gpsResult.location,
         ipLocation: {

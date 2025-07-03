@@ -29,7 +29,14 @@ export class DetectionEngine {
         botDetection
       ] = await Promise.all([
         this.runIpAnalysis(),
-        this.webrtcLeak.detectLeak(),
+        (async () => {
+          const webrtcResult = await this.webrtcLeak.detectLeak();
+          // Ensure localIpCountry is present (fallback to empty string if missing)
+          return {
+            localIpCountry: (webrtcResult as any).localIpCountry ?? '',
+            ...webrtcResult
+          };
+        })(),
         this.fingerprinting.generateFingerprint(),
         this.locationMismatch.checkLocationMismatch(),
         this.runBotDetection()
@@ -238,6 +245,46 @@ export class DetectionEngine {
     const detectedTypes: string[] = [];
     const riskFactors: string[] = [];
 
+    // Helper function to check if IP is private
+    const isPrivateIp = (ip: string): boolean => {
+      return /^10\./.test(ip) || /^192\.168\./.test(ip) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
+    };
+
+    // Helper function to map timezone to continent
+    const timezoneToContinent = (timezone: string): string | null => {
+      if (!timezone) return null;
+      if (timezone.startsWith('Africa')) return 'Africa';
+      if (timezone.startsWith('America')) return 'North America';
+      if (timezone.startsWith('Europe')) return 'Europe';
+      if (timezone.startsWith('Asia')) return 'Asia';
+      if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
+      return null;
+    };
+
+    // Helper function to map country code to continent
+    const countryToContinent = (countryCode: string): string | null => {
+      const mapping: Record<string, string> = {
+        'US': 'North America',
+        'CA': 'North America',
+        'MX': 'North America',
+        'BR': 'South America',
+        'AR': 'South America',
+        'GB': 'Europe',
+        'FR': 'Europe',
+        'DE': 'Europe',
+        'NG': 'Africa',
+        'ZA': 'Africa',
+        'EG': 'Africa',
+        'CN': 'Asia',
+        'JP': 'Asia',
+        'IN': 'Asia',
+        'AU': 'Oceania',
+        'NZ': 'Oceania'
+        // Add more as needed
+      };
+      return mapping[countryCode.toUpperCase()] || null;
+    };
+
     // IP Analysis scoring
     if (results.ipAnalysis) {
       if (results.ipAnalysis.isDatacenter) {
@@ -273,48 +320,37 @@ export class DetectionEngine {
       confidenceScore += 35;
       detectedTypes.push('WebRTC Leak');
       riskFactors.push('Local IP leak detected');
+
+      // New logic: compare WebRTC local IP country with public IP country
+      const localIp = results.webrtcLeak.localIps[0] || '';
+      const publicIpCountry = results.ipAnalysis?.country || '';
+      const localIpCountry = results.webrtcLeak.localIpCountry || '';
+
+      // If local IP is private and countries differ, increase confidence and add detected type
+      if (
+        typeof localIp === 'string' &&
+        isPrivateIp(localIp) &&
+        localIpCountry &&
+        publicIpCountry &&
+        localIpCountry !== publicIpCountry
+      ) {
+        confidenceScore += 40;
+        detectedTypes.push('WebRTC Local IP Country Mismatch');
+        riskFactors.push('Mismatch between WebRTC local IP country and public IP country');
+      }
     }
 
     // Browser Fingerprint scoring
     if (results.fingerprint) {
-      // Helper function to map timezone to continent
-      const timezoneToContinent = (timezone: string): string | null => {
-        if (!timezone) return null;
-        if (timezone.startsWith('Africa')) return 'Africa';
-        if (timezone.startsWith('America')) return 'North America';
-        if (timezone.startsWith('Europe')) return 'Europe';
-        if (timezone.startsWith('Asia')) return 'Asia';
-        if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
-        return null;
-      };
-
-      // Helper function to map country code to continent
-      const countryToContinent = (countryCode: string): string | null => {
-        const mapping: Record<string, string> = {
-          'US': 'North America',
-          'CA': 'North America',
-          'MX': 'North America',
-          'BR': 'South America',
-          'AR': 'South America',
-          'GB': 'Europe',
-          'FR': 'Europe',
-          'DE': 'Europe',
-          'NG': 'Africa',
-          'ZA': 'Africa',
-          'EG': 'Africa',
-          'CN': 'Asia',
-          'JP': 'Asia',
-          'IN': 'Asia',
-          'AU': 'Oceania',
-          'NZ': 'Oceania'
-          // Add more as needed
-        };
-        return mapping[countryCode.toUpperCase()] || null;
-      };
-
       // Check for timezone mismatch between fingerprint and IP location
       const fingerprintTimezone = results.fingerprint.timezone;
-      const ipTimezone = results.ipAnalysis?.timezone;
+      let ipTimezone = results.ipAnalysis?.timezone;
+
+      // If IP timezone is unknown, fallback to timezone from IP country
+      if ((!ipTimezone || ipTimezone === 'Unknown') && results.ipAnalysis?.country) {
+        const countryCode = results.ipAnalysis.country.split(' ').pop() || '';
+        ipTimezone = this.getTimezoneFromCountryCode(countryCode);
+      }
 
       let timezoneMismatch = false;
       if (fingerprintTimezone && ipTimezone && fingerprintTimezone !== ipTimezone) {
@@ -362,38 +398,6 @@ export class DetectionEngine {
     // Force VPN detection if critical flags are true
     const fingerprintMismatch = (() => {
       if (!results.fingerprint || !results.ipAnalysis) return false;
-
-      const timezoneToContinent = (timezone: string): string | null => {
-        if (!timezone) return null;
-        if (timezone.startsWith('Africa')) return 'Africa';
-        if (timezone.startsWith('America')) return 'North America';
-        if (timezone.startsWith('Europe')) return 'Europe';
-        if (timezone.startsWith('Asia')) return 'Asia';
-        if (timezone.startsWith('Australia') || timezone.startsWith('Pacific')) return 'Oceania';
-        return null;
-      };
-
-      const countryToContinent = (countryCode: string): string | null => {
-        const mapping: Record<string, string> = {
-          'US': 'North America',
-          'CA': 'North America',
-          'MX': 'North America',
-          'BR': 'South America',
-          'AR': 'South America',
-          'GB': 'Europe',
-          'FR': 'Europe',
-          'DE': 'Europe',
-          'NG': 'Africa',
-          'ZA': 'Africa',
-          'EG': 'Africa',
-          'CN': 'Asia',
-          'JP': 'Asia',
-          'IN': 'Asia',
-          'AU': 'Oceania',
-          'NZ': 'Oceania'
-        };
-        return mapping[countryCode.toUpperCase()] || null;
-      };
 
       const fingerprintTimezone = results.fingerprint.timezone;
       const ipTimezone = results.ipAnalysis.timezone;
