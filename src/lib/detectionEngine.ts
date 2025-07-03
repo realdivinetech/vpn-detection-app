@@ -38,7 +38,10 @@ export class DetectionEngine {
       const results: DetectionResults = {
         ipAnalysis,
         webrtcLeak: webrtcResult,
-        fingerprint: fingerprintResult,
+        fingerprint: {
+          ...fingerprintResult,
+          languages: Array.from(fingerprintResult.languages)
+        },
         locationMismatch: locationResult,
         botDetection
       };
@@ -79,24 +82,56 @@ export class DetectionEngine {
       return {
         publicIp: 'Unknown',
         country: 'Unknown',
+        city: 'Unknown',
+        region: 'Unknown',
+        hostname: 'Unknown',
         isp: 'Unknown',
-        isDatacenter: false,
-        riskScore: 0,
+        organization: 'Unknown',
         asn: null,
+        asnOrg: 'Unknown',
+        isDatacenter: false,
         isHosting: false,
-        isTor: false
+        isTor: false,
+        isProxy: false,
+        riskScore: 0,
+        latitude: null,
+        longitude: null,
+        timezone: 'Unknown',
+        connectionType: 'Unknown',
+        sharedConnection: 'Unknown',
+        dynamicConnection: 'Unknown',
+        securityScanner: 'No',
+        trustedNetwork: 'Unknown',
+        frequentAbuser: 'Unknown',
+        highRiskAttacks: 'Unknown'
       };
     } catch (error) {
       console.error('IP analysis failed:', error);
       return {
         publicIp: 'Unknown',
         country: 'Unknown',
+        city: 'Unknown',
+        region: 'Unknown',
+        hostname: 'Unknown',
         isp: 'Unknown',
-        isDatacenter: false,
-        riskScore: 0,
+        organization: 'Unknown',
         asn: null,
+        asnOrg: 'Unknown',
+        isDatacenter: false,
         isHosting: false,
-        isTor: false
+        isTor: false,
+        isProxy: false,
+        riskScore: 0,
+        latitude: null,
+        longitude: null,
+        timezone: 'Unknown',
+        connectionType: 'Unknown',
+        sharedConnection: 'Unknown',
+        dynamicConnection: 'Unknown',
+        securityScanner: 'No',
+        trustedNetwork: 'Unknown',
+        frequentAbuser: 'Unknown',
+        highRiskAttacks: 'Unknown'
       };
     }
   }
