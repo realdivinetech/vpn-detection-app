@@ -370,7 +370,7 @@ export class DetectionEngine {
       () => navigator.userAgent.includes('HeadlessChrome'),
       () => window.outerHeight === 0,
       () => window.outerWidth === 0,
-      () => !window.chrome?.runtime,
+      () => !(window as any).chrome?.runtime,
       () => typeof navigator.permissions?.query !== 'function'
     ];
 
@@ -452,9 +452,9 @@ export class DetectionEngine {
       confidenceScore += results.ipAnalysis.riskScore * 0.3;
     }
 
-    // WebRTC Leak scoring
+    // WebRTC Leak scoring - increased weight
     if (results.webrtcLeak?.hasLeak) {
-      confidenceScore += 20;
+      confidenceScore += 35;
       detectedTypes.push('WebRTC Leak');
       riskFactors.push('Local IP leak detected');
     }
@@ -468,9 +468,9 @@ export class DetectionEngine {
       }
     }
 
-    // Location Mismatch scoring
+    // Location Mismatch scoring - increased weight
     if (results.locationMismatch?.hasMismatch) {
-      confidenceScore += 25;
+      confidenceScore += 40;
       detectedTypes.push('Location Mismatch');
       riskFactors.push('GPS and IP location mismatch');
     }
@@ -485,8 +485,17 @@ export class DetectionEngine {
     // Cap confidence score at 100
     confidenceScore = Math.min(100, Math.round(confidenceScore));
 
+    // Force VPN detection if critical flags are true
+    const criticalFlags = [
+      results.webrtcLeak?.hasLeak,
+      results.locationMismatch?.hasMismatch,
+      results.botDetection?.isBot
+    ];
+
+    const isVpnDetected = confidenceScore >= 50 || criticalFlags.some(flag => flag === true);
+
     return {
-      isVpnDetected: confidenceScore >= 50,
+      isVpnDetected,
       confidenceScore,
       detectedTypes,
       riskFactors,
