@@ -12,7 +12,7 @@ const Documentation = () => {
   }, []);
 
   return (
-    <div className="container mx-auto p-4 prose dark:prose-invert max-w-none">
+    <div className="container mx-auto p-4 prose dark:prose-invert max-w-none text-lg">
       <ReactMarkdown>{content}</ReactMarkdown>
     </div>
   );

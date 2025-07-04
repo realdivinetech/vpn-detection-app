@@ -214,10 +214,6 @@ These fallback strategies ensure robust detection even if some services are unav
 4. Review detailed results and risk assessment
 
 ### Admin Panel Access (disabled out of Scope)
-1. Toggle the "Admin Dashboard" switch
-2. Login with credentials (default: admin/admin)
-3. View detection logs and system statistics
-4. Export data for further analysis
 
 ## 🔒 Security Features
 
@@ -236,8 +232,6 @@ This project integrates with several free IP analysis services:
 - **ipgeolocation.io**: Professional IP analysis
 - **check.getipintel.net**: Professional IP Proxy Detection
 - **IPinfo.io**: Ip check
-
-*Note: Some services may have rate limits. Consider upgrading to paid plans for production use.*
 
 ## 📊 Performance
 
