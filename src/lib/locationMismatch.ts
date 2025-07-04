@@ -91,10 +91,36 @@ export class LocationMismatch {
     let permissionGranted = false;
     try {
       const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
-      permissionGranted = permissionStatus.state === 'granted';
+      permissionGranted = permissionStatus.state === 'granted' || permissionStatus.state === 'prompt';
     } catch {
       // Permissions API not supported or error, fallback to false
       permissionGranted = false;
+    }
+
+    if (!permissionGranted) {
+      // Try to request permission explicitly by calling getCurrentPosition once
+      try {
+        const permissionResult = await new Promise<boolean>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            () => resolve(true),
+            () => resolve(false),
+            { timeout: 5000 }
+          );
+        });
+        permissionGranted = permissionResult;
+      } catch {
+        permissionGranted = false;
+      }
+    }
+
+    if (!permissionGranted) {
+      // User denied permission or permission not granted
+      // Return early with appropriate error message
+      return {
+        success: false,
+        error: 'GPS permission denied or not granted',
+        permissionGranted: false
+      };
     }
 
     return new Promise((resolve) => {
