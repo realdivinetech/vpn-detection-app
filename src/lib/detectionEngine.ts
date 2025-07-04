@@ -145,7 +145,7 @@ export class DetectionEngine {
           riskFactors.push(config.risk);
         }
       }
-      confidenceScore += results.ipAnalysis.riskScore * 0.5;
+      confidenceScore += (typeof results.ipAnalysis.riskScore === 'number' ? results.ipAnalysis.riskScore : 0) * 0.5;
     }
 
     // WebRTC Leak scoring
@@ -198,8 +198,8 @@ export class DetectionEngine {
         riskFactors.push(config.risk);
       }
 
-      confidenceScore += results.fingerprint.suspicionScore * 0.5;
-      if (results.fingerprint.suspicionScore > 60) {
+      confidenceScore += (typeof results.fingerprint.suspicionScore === 'number' ? results.fingerprint.suspicionScore : 0) * 0.5;
+      if ((typeof results.fingerprint.suspicionScore === 'number' ? results.fingerprint.suspicionScore : 0) > 60) {
         const config = scoringConfig.suspiciousFingerprint;
         confidenceScore += 10; // Add weight for suspicious fingerprint
         detectedTypes.push(config.label);

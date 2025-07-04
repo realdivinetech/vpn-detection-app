@@ -98,13 +98,18 @@ class IpClassifier {
   }
 
   async isTorExitNode(ip) {
-    // In a production environment, you would check against the Tor exit node list
-    // For now, we'll use a simple heuristic
     try {
-      // You could implement a check against https://check.torproject.org/api/ip
-      // or maintain a local list of Tor exit nodes
-      return false; // Placeholder
+      // Check against Tor Project's exit list API
+      const response = await fetch(`https://check.torproject.org/torbulkexitlist`);
+      if (!response.ok) {
+        console.warn('Failed to fetch Tor exit node list');
+        return false;
+      }
+      const text = await response.text();
+      const exitNodes = new Set(text.split('\n').map(line => line.trim()).filter(line => line.length > 0));
+      return exitNodes.has(ip);
     } catch (error) {
+      console.error('Error checking Tor exit node:', error);
       return false;
     }
   }

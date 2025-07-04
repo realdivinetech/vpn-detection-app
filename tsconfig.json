@@ -6,9 +6,13 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
+    "types": ["vitest"],
     "paths": {
       "@/*": ["./src/*"]
     },
+     "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "Node",
     "noImplicitAny": false,
     "noUnusedParameters": false,
     "skipLibCheck": true,
