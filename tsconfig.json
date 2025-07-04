@@ -6,9 +6,9 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
-    "types": ["vitest"],
-    "paths": {
-      "@/*": ["./src/*"]
+    "types": ["vitest"],       
+    "paths": {            // required for paths
+      "@/*": ["src/*"]
     },
      "module": "ESNext",
     "target": "ESNext",

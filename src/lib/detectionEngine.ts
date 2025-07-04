@@ -2,7 +2,7 @@ import { BrowserFingerprinting } from './fingerprinting';
 import { WebRTCLeak } from './webrtcLeak';
 import { LocationMismatch } from './locationMismatch';
 import { apiClient } from './apiClient';
-import { DetectionResult, DetectionResults } from '@/types/detection';
+import { DetectionResult, DetectionResults } from '../types/detection';
 
 export class DetectionEngine {
   private fingerprinting: BrowserFingerprinting;
@@ -37,7 +37,8 @@ export class DetectionEngine {
         webrtcLeak: webrtcResult as any,
         fingerprint: {
           ...fingerprintResult,
-          languages: Array.from(fingerprintResult.languages)
+          languages: Array.from(fingerprintResult.languages),
+          connection: fingerprintResult.connection === null ? undefined : fingerprintResult.connection
         },
         locationMismatch: locationResult,
         botDetection

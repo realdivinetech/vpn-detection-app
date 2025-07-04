@@ -57,11 +57,11 @@ export class LocationMismatch {
         distance,
         gpsAvailable: true,
         gpsLocation: gpsResult.location,
-        ipLocation: {
-          ...ipResult.location!,
-          country: ipCountry,
-          city: ipResult.city
-        }
+      ipLocation: {
+        ...ipResult.location!,
+        country: ipCountry || 'Unknown',
+        city: ipResult.city || 'Unknown'
+      }
       };
     } catch (error) {
       return {

@@ -30,13 +30,13 @@ A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and
 - **UI Framework**: Shadcn/UI + Tailwind CSS
 - **State Management**: React Hooks
 - **Build Tool**: Vite
-- **Package Manager**: pnpm
+- **Package Manager**: npm
 
 ## 📦 Installation
 
 ### Prerequisites
 - Node.js 19.0.1
-- pnpm (recommended) or npm
+- npm
 
 ### Quick Start
 
@@ -48,23 +48,25 @@ A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and
 
 2. **Install dependencies**
    ```bash
-   pnpm install
+   npm install
    ```
 
 3. **Start development server**
    ```bash
-   pnpm run dev
+   npm run dev
    ```
 
 4. **Build for production**
    ```bash
-   pnpm run build
+   npm run build
    ```
 
 5. **Preview production build**
    ```bash
-   pnpm run preview
+   npm run preview
    ```
+   npm run build
+   npm run dev
 
 ## 🔧 How It Works
 
