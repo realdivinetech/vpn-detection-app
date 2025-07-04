@@ -12,12 +12,6 @@ A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and
 - **Bot Detection**: Identifies automated browsers and headless environments
 - **Behavioral Analysis**: Monitors user interaction patterns for suspicious activity
 
-### Admin Dashboard
-- **Secure Authentication**: Admin panel with configurable credentials
-- **Detection Logs**: View historical detection results and statistics
-- **Real-time Monitoring**: Track detection attempts and success rates
-- **Data Export**: Export detection logs for analysis
-
 ### Technical Features
 - **Multi-Service IP Analysis**: Uses 3 fallback IP analysis APIs for reliability
 - **Real-time Results**: Live progress tracking during detection scans
