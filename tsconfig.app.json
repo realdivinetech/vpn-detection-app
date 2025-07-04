@@ -11,11 +11,15 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Node",
+    "baseUrl": ".",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "vitest/globals", "jsdom"]
+    "types": ["vite/client", "vitest/globals", "jsdom"],
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src"]
 }

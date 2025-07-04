@@ -101,7 +101,7 @@ export default function VpnDetector() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-2 sm:p-4 md:p-6" role="main" aria-label="VPN Proxy Detection System">
+<main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 pt-12 px-2 sm:pt-16 sm:px-4 md:pt-20 md:px-6" role="main" aria-label="VPN Proxy Detection System">
       <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
         <header className="text-center space-y-3 sm:space-y-4">
