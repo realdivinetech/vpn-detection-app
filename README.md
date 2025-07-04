@@ -107,9 +107,17 @@ The detection engine uses this detailed WebRTC data to calculate a suspicion sco
 
 This multi-server approach and detailed candidate analysis improve the reliability and accuracy of WebRTC leak detection.
 
+
 ### Location Mismatch Detection
 
-This system detects location mismatches by comparing the user's GPS coordinates with the geolocation derived from their IP address. Significant discrepancies between these two data points indicate potential VPN or proxy usage. This method helps identify users attempting to mask their true location, enhancing detection accuracy.
+This system detects location mismatches by comparing the user's GPS coordinates with the geolocation derived from their IP address. The system calculates the distance between these two locations and classifies the match level as follows:
+
+- **Good**: Distance less than or equal to 300 km (likely same region or city)
+- **Fair**: Distance between 301 km and 1000 km (possible ISP drift)
+- **Mismatch**: Distance greater than 1000 km (GPS and IP locations are far apart)
+
+A mismatch indicates potential VPN or proxy usage, helping identify users attempting to mask their true location and enhancing detection accuracy.
+
 
 ### IP Analysis
 
@@ -189,7 +197,7 @@ The overall detection confidence score is calculated by combining weighted facto
   - Continent mismatch (+50)
   - Suspicion score (weighted by 0.5, +10 if suspicious)
 - Location Mismatch (+50)
-  - Includes distance mismatch (>100 km) and country mismatch between GPS and IP location.
+  - Includes distance mismatch (>300 km) and country mismatch between GPS and IP location.
 - Bot/Automation Detection (+45)
 
 
