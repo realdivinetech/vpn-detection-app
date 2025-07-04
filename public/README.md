@@ -2,6 +2,8 @@
 
 A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and other anonymization services using advanced multi-layer detection techniques.
 
+**GitHub Repository:** [https://github.com/realdivinetech/vpn-detection-app](https://github.com/realdivinetech/vpn-detection-app)
+
 ## 🚀 Features
 
 ### Core Detection Methods
