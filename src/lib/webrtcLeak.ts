@@ -1,10 +1,10 @@
-interface WebRTCLeakResult {
+export interface WebRTCLeakResult {
   hasLeak: boolean;
   localIps: string[];
   localIpv6s: string[];
   publicIps: string[];
   stunServersUsed: string[];
-  // Remove localIpCountry as it is no longer used
+  candidateTypes: Set<string>;
 }
 
 export class WebRTCLeak {
@@ -13,7 +13,12 @@ export class WebRTCLeak {
     'stun:stun1.l.google.com:19302',
     'stun:stun2.l.google.com:19302',
     'stun:stun.services.mozilla.com',
-    'stun:stun.stunprotocol.org:3478'
+    'stun:stun.stunprotocol.org:3478',
+    'stun:stun.voipbuster.com',
+    'stun:stun.voipstunt.com',
+    'stun:stun.counterpath.com',
+    'stun:stun.ideasip.com',
+    'stun:stun.schlund.de'
   ];
 
   async detectLeak(): Promise<WebRTCLeakResult> {
@@ -22,11 +27,11 @@ export class WebRTCLeak {
       const localIpv6s: string[] = [];
       const publicIps: string[] = [];
       const stunServersUsed: string[] = [];
+      const candidateTypes: Set<string> = new Set();
       let completedChecks = 0;
       const totalChecks = this.stunServers.length;
 
       const ipv4Regex = /([0-9]{1,3}(?:\.[0-9]{1,3}){3})/;
-      // Simplified IPv6 regex for ICE candidates (may need refinement)
       const ipv6Regex = /([a-fA-F0-9:]+:+)+[a-fA-F0-9]+/;
 
       const handleComplete = () => {
@@ -40,7 +45,8 @@ export class WebRTCLeak {
             localIps: uniqueLocalIps,
             localIpv6s: uniqueLocalIpv6s,
             publicIps: uniquePublicIps,
-            stunServersUsed
+            stunServersUsed,
+            candidateTypes
           });
         }
       };
@@ -51,7 +57,8 @@ export class WebRTCLeak {
           localIps: [],
           localIpv6s: [],
           publicIps: [],
-          stunServersUsed: []
+          stunServersUsed: [],
+          candidateTypes
         });
         return;
       }
@@ -69,6 +76,12 @@ export class WebRTCLeak {
           pc.onicecandidate = (event) => {
             if (event.candidate) {
               const candidate = event.candidate.candidate;
+
+              // Extract candidate type
+              const typeMatch = candidate.match(/typ ([a-zA-Z]+)/);
+              if (typeMatch) {
+                candidateTypes.add(typeMatch[1]);
+              }
 
               // Extract IPv4 addresses
               const ipv4Match = candidate.match(ipv4Regex);
@@ -110,7 +123,7 @@ export class WebRTCLeak {
               pc.close();
               handleComplete();
             }
-          }, 3000);
+          }, 5000);
 
         } catch {
           handleComplete();
@@ -121,7 +134,7 @@ export class WebRTCLeak {
         if (completedChecks < totalChecks) {
           handleComplete();
         }
-      }, 5000);
+      }, 7000);
     });
   }
 

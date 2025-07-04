@@ -2,6 +2,8 @@
 
 A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and other anonymization services using advanced multi-layer detection techniques.
 
+**GitHub Repository:** [https://github.com/realdivinetech/vpn-detection-app](https://github.com/realdivinetech/vpn-detection-app)
+
 ## 🚀 Features
 
 ### Core Detection Methods
@@ -104,6 +106,9 @@ For each STUN server, the system gathers ICE candidates and extracts IP addresse
 The presence of local IPs or public IPs in the ICE candidates indicates a WebRTC leak, which can reveal the user's real IP address even when using VPNs or proxies.
 
 The detection engine uses this detailed WebRTC data to calculate a suspicion score. For example, the presence of "relay" candidates (TURN servers) may indicate VPN or proxy usage, increasing the suspicion score.
+
+**Note on Server Reflexive Candidates ("srflx"):**  
+These candidates represent the public IP address as seen by the STUN server and are crucial in detecting if the user's IP is being masked or relayed through a VPN or proxy.
 
 This multi-server approach and detailed candidate analysis improve the reliability and accuracy of WebRTC leak detection.
 
