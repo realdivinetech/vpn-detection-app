@@ -49,8 +49,11 @@ export interface WebRTCLeakResult {
   localIpCountry: string;
   hasLeak: boolean;
   localIps: string[];
+  localIpv6s: string[];
+  publicIps: string[];
   publicIp?: string;
   stunServersUsed: string[];
+  candidateTypes?: Set<string>;
 }
 
 export interface FingerprintResult {

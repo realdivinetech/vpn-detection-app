@@ -78,20 +78,31 @@ export class LocationMismatch {
     success: boolean;
     location?: { lat: number; lng: number; accuracy: number };
     error?: string;
+    permissionGranted?: boolean;
   }> {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve({
-          success: false,
-          error: 'Geolocation not supported'
-        });
-        return;
-      }
+    if (!navigator.geolocation) {
+      return {
+        success: false,
+        error: 'Geolocation not supported',
+        permissionGranted: false
+      };
+    }
 
+    let permissionGranted = false;
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+      permissionGranted = permissionStatus.state === 'granted';
+    } catch {
+      // Permissions API not supported or error, fallback to false
+      permissionGranted = false;
+    }
+
+    return new Promise((resolve) => {
       const timeout = setTimeout(() => {
         resolve({
           success: false,
-          error: 'GPS timeout'
+          error: 'GPS timeout',
+          permissionGranted
         });
       }, 10000);
 
@@ -104,7 +115,8 @@ export class LocationMismatch {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
               accuracy: position.coords.accuracy
-            }
+            },
+            permissionGranted
           });
         },
         (error) => {
@@ -123,7 +135,8 @@ export class LocationMismatch {
           }
           resolve({
             success: false,
-            error: errorMessage
+            error: errorMessage,
+            permissionGranted
           });
         },
         {

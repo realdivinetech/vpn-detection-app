@@ -1,5 +1,5 @@
 import { BrowserFingerprinting } from './fingerprinting';
-import { WebRTCLeak } from './webrtcLeak';
+import { WebRTCLeak, WebRTCLeakResult } from './webrtcLeak';
 import { LocationMismatch } from './locationMismatch';
 import { apiClient } from './apiClient';
 import { DetectionResult, DetectionResults } from '../types/detection';
@@ -155,6 +155,21 @@ export class DetectionEngine {
       confidenceScore += config.weight;
       detectedTypes.push(config.label);
       riskFactors.push(config.risk);
+
+      // Additional scoring based on detailed WebRTC data
+      if (results.webrtcLeak.candidateTypes) {
+        const candidateTypes = Array.from(results.webrtcLeak.candidateTypes);
+        if (candidateTypes.includes('relay')) {
+          confidenceScore += 10; // Relay candidates indicate use of TURN servers, possibly VPN or proxy
+          detectedTypes.push('WebRTC Relay Candidate Detected');
+          riskFactors.push('Presence of relay ICE candidates indicates possible VPN or proxy usage');
+        }
+        if (candidateTypes.includes('srflx')) {
+          confidenceScore += 5; // Server reflexive candidates indicate NAT traversal
+          detectedTypes.push('WebRTC Server Reflexive Candidate Detected');
+          riskFactors.push('Presence of server reflexive ICE candidates indicates NAT traversal');
+        }
+      }
     }
 
     // Browser Fingerprint scoring
@@ -171,15 +186,14 @@ export class DetectionEngine {
         }
       }
 
+      let fingerprintSpoofed = false;
+
       if (
         fingerprintTimezone !== ipTimezone &&
         ipTimezone !== 'Unknown' &&
         fingerprintTimezone !== 'Unknown'
       ) {
-        const config = scoringConfig.fingerprintTimezoneMismatch;
-        confidenceScore += config.weight;
-        detectedTypes.push(config.label);
-        riskFactors.push(config.risk);
+        fingerprintSpoofed = true;
       }
 
       const fingerprintContinent = this.timezoneToContinent(fingerprintTimezone);
@@ -193,16 +207,21 @@ export class DetectionEngine {
         ipContinent &&
         fingerprintContinent !== ipContinent
       ) {
-        const config = scoringConfig.fingerprintContinentMismatch;
-        confidenceScore += config.weight;
-        detectedTypes.push(config.label);
-        riskFactors.push(config.risk);
+        fingerprintSpoofed = true;
       }
 
       confidenceScore += (typeof results.fingerprint.suspicionScore === 'number' ? results.fingerprint.suspicionScore : 0) * 0.5;
       if ((typeof results.fingerprint.suspicionScore === 'number' ? results.fingerprint.suspicionScore : 0) > 60) {
-        const config = scoringConfig.suspiciousFingerprint;
-        confidenceScore += 10; // Add weight for suspicious fingerprint
+        fingerprintSpoofed = true;
+      }
+
+      if (fingerprintSpoofed) {
+        const config = {
+          weight: 10,
+          label: 'Fingerprint Spoofed',
+          risk: 'Browser fingerprint data appears spoofed or inconsistent'
+        };
+        confidenceScore += config.weight;
         detectedTypes.push(config.label);
         riskFactors.push(config.risk);
       }
