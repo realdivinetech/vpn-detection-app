@@ -2,7 +2,7 @@ import { BrowserFingerprinting } from './fingerprinting';
 import { WebRTCLeak } from './webrtcLeak';
 import { LocationMismatch } from './locationMismatch';
 import { apiClient } from './apiClient';
-import { DetectionResult, DetectionResults } from '@/types/detection';
+import { DetectionResult, DetectionResults } from '../types/detection';
 
 export class DetectionEngine {
   private fingerprinting: BrowserFingerprinting;
@@ -37,7 +37,8 @@ export class DetectionEngine {
         webrtcLeak: webrtcResult as any,
         fingerprint: {
           ...fingerprintResult,
-          languages: Array.from(fingerprintResult.languages)
+          languages: Array.from(fingerprintResult.languages),
+          connection: fingerprintResult.connection === null ? undefined : fingerprintResult.connection
         },
         locationMismatch: locationResult,
         botDetection
@@ -145,7 +146,7 @@ export class DetectionEngine {
           riskFactors.push(config.risk);
         }
       }
-      confidenceScore += results.ipAnalysis.riskScore * 0.5;
+      confidenceScore += (typeof results.ipAnalysis.riskScore === 'number' ? results.ipAnalysis.riskScore : 0) * 0.5;
     }
 
     // WebRTC Leak scoring
@@ -198,8 +199,8 @@ export class DetectionEngine {
         riskFactors.push(config.risk);
       }
 
-      confidenceScore += results.fingerprint.suspicionScore * 0.5;
-      if (results.fingerprint.suspicionScore > 60) {
+      confidenceScore += (typeof results.fingerprint.suspicionScore === 'number' ? results.fingerprint.suspicionScore : 0) * 0.5;
+      if ((typeof results.fingerprint.suspicionScore === 'number' ? results.fingerprint.suspicionScore : 0) > 60) {
         const config = scoringConfig.suspiciousFingerprint;
         confidenceScore += 10; // Add weight for suspicious fingerprint
         detectedTypes.push(config.label);

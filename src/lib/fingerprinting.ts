@@ -34,7 +34,8 @@ export class BrowserFingerprinting {
   }
 
   private async getPlugins(): Promise<string[]> {
-    const plugins = [];
+    const plugins: string[] = [];
+    if (!navigator.plugins) return plugins;
     for (let i = 0; i < navigator.plugins.length; i++) {
       plugins.push(navigator.plugins[i].name);
     }
