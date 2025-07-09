@@ -323,23 +323,254 @@ export class DetectionEngine {
 
   private getTimezoneFromCountryCode(countryCode: string): string {
     const countryTimezoneMap: Record<string, string> = {
-      'US': 'America/New_York',
-      'CA': 'America/Toronto',
-      'GB': 'Europe/London',
-      'FR': 'Europe/Paris',
-      'DE': 'Europe/Berlin',
-      'NG': 'Africa/Lagos',
-      'ZA': 'Africa/Johannesburg',
-      'EG': 'Africa/Cairo',
-      'CN': 'Asia/Shanghai',
-      'JP': 'Asia/Tokyo',
-      'IN': 'Asia/Kolkata',
-      'AU': 'Australia/Sydney',
-      'NZ': 'Pacific/Auckland',
-      'BR': 'America/Sao_Paulo',
-      'MX': 'America/Mexico_City',
-      'AR': 'America/Argentina/Buenos_Aires'
-      // Add more as needed
+      "AF": "Asia/Kabul",
+      "AL": "Europe/Tirane",
+      "DZ": "Africa/Algiers",
+      "AS": "Pacific/Pago_Pago",
+      "AD": "Europe/Andorra",
+      "AO": "Africa/Luanda",
+      "AI": "America/Anguilla",
+      "AQ": "Antarctica/Palmer",
+      "AG": "America/Antigua",
+      "AR": "America/Argentina/Buenos_Aires",
+      "AM": "Asia/Yerevan",
+      "AW": "America/Aruba",
+      "AU": "Australia/Sydney",
+      "AT": "Europe/Vienna",
+      "AZ": "Asia/Baku",
+      "BS": "America/Nassau",
+      "BH": "Asia/Bahrain",
+      "BD": "Asia/Dhaka",
+      "BB": "America/Barbados",
+      "BY": "Europe/Minsk",
+      "BE": "Europe/Brussels",
+      "BZ": "America/Belize",
+      "BJ": "Africa/Porto-Novo",
+      "BM": "Atlantic/Bermuda",
+      "BT": "Asia/Thimphu",
+      "BO": "America/La_Paz",
+      "BQ": "America/Kralendijk",
+      "BA": "Europe/Sarajevo",
+      "BW": "Africa/Gaborone",
+      "BV": "Antarctica/Bouvet",
+      "BR": "America/Sao_Paulo",
+      "IO": "Indian/Chagos",
+      "BN": "Asia/Brunei",
+      "BG": "Europe/Sofia",
+      "BF": "Africa/Ouagadougou",
+      "BI": "Africa/Bujumbura",
+      "KH": "Asia/Phnom_Penh",
+      "CM": "Africa/Douala",
+      "CA": "America/Toronto",
+      "CV": "Atlantic/Cape_Verde",
+      "KY": "America/Cayman",
+      "CF": "Africa/Bangui",
+      "TD": "Africa/Ndjamena",
+      "CL": "America/Santiago",
+      "CN": "Asia/Shanghai",
+      "CX": "Indian/Christmas",
+      "CC": "Indian/Cocos",
+      "CO": "America/Bogota",
+      "KM": "Indian/Comoro",
+      "CG": "Africa/Brazzaville",
+      "CD": "Africa/Kinshasa",
+      "CK": "Pacific/Rarotonga",
+      "CR": "America/Costa_Rica",
+      "CI": "Africa/Abidjan",
+      "HR": "Europe/Zagreb",
+      "CU": "America/Havana",
+      "CW": "America/Curacao",
+      "CY": "Asia/Nicosia",
+      "CZ": "Europe/Prague",
+      "DK": "Europe/Copenhagen",
+      "DJ": "Africa/Djibouti",
+      "DM": "America/Dominica",
+      "DO": "America/Santo_Domingo",
+      "EC": "America/Guayaquil",
+      "EG": "Africa/Cairo",
+      "SV": "America/El_Salvador",
+      "GQ": "Africa/Malabo",
+      "ER": "Africa/Asmara",
+      "EE": "Europe/Tallinn",
+      "SZ": "Africa/Mbabane",
+      "ET": "Africa/Addis_Ababa",
+      "FK": "Atlantic/Stanley",
+      "FO": "Atlantic/Faroe",
+      "FJ": "Pacific/Fiji",
+      "FI": "Europe/Helsinki",
+      "FR": "Europe/Paris",
+      "GF": "America/Cayenne",
+      "PF": "Pacific/Tahiti",
+      "TF": "Indian/Kerguelen",
+      "GA": "Africa/Libreville",
+      "GM": "Africa/Banjul",
+      "GE": "Asia/Tbilisi",
+      "DE": "Europe/Berlin",
+      "GH": "Africa/Accra",
+      "GI": "Europe/Gibraltar",
+      "GR": "Europe/Athens",
+      "GL": "America/Godthab",
+      "GD": "America/Grenada",
+      "GP": "America/Guadeloupe",
+      "GU": "Pacific/Guam",
+      "GT": "America/Guatemala",
+      "GG": "Europe/Guernsey",
+      "GN": "Africa/Conakry",
+      "GW": "Africa/Bissau",
+      "GY": "America/Guyana",
+      "HT": "America/Port-au-Prince",
+      "HM": "Antarctica/McMurdo",
+      "VA": "Europe/Vatican",
+      "HN": "America/Tegucigalpa",
+      "HK": "Asia/Hong_Kong",
+      "HU": "Europe/Budapest",
+      "IS": "Atlantic/Reykjavik",
+      "IN": "Asia/Kolkata",
+      "ID": "Asia/Jakarta",
+      "IR": "Asia/Tehran",
+      "IQ": "Asia/Baghdad",
+      "IE": "Europe/Dublin",
+      "IM": "Europe/Isle_of_Man",
+      "IL": "Asia/Jerusalem",
+      "IT": "Europe/Rome",
+      "JM": "America/Jamaica",
+      "JP": "Asia/Tokyo",
+      "JE": "Europe/Jersey",
+      "JO": "Asia/Amman",
+      "KZ": "Asia/Almaty",
+      "KE": "Africa/Nairobi",
+      "KI": "Pacific/Tarawa",
+      "KP": "Asia/Pyongyang",
+      "KR": "Asia/Seoul",
+      "KW": "Asia/Kuwait",
+      "KG": "Asia/Bishkek",
+      "LA": "Asia/Vientiane",
+      "LV": "Europe/Riga",
+      "LB": "Asia/Beirut",
+      "LS": "Africa/Maseru",
+      "LR": "Africa/Monrovia",
+      "LY": "Africa/Tripoli",
+      "LI": "Europe/Vaduz",
+      "LT": "Europe/Vilnius",
+      "LU": "Europe/Luxembourg",
+      "MO": "Asia/Macau",
+      "MG": "Indian/Antananarivo",
+      "MW": "Africa/Blantyre",
+      "MY": "Asia/Kuala_Lumpur",
+      "MV": "Indian/Maldives",
+      "ML": "Africa/Bamako",
+      "MT": "Europe/Malta",
+      "MH": "Pacific/Majuro",
+      "MQ": "America/Martinique",
+      "MR": "Africa/Nouakchott",
+      "MU": "Indian/Mauritius",
+      "YT": "Indian/Mayotte",
+      "MX": "America/Mexico_City",
+      "FM": "Pacific/Chuuk",
+      "MD": "Europe/Chisinau",
+      "MC": "Europe/Monaco",
+      "MN": "Asia/Ulaanbaatar",
+      "ME": "Europe/Podgorica",
+      "MS": "America/Montserrat",
+      "MA": "Africa/Casablanca",
+      "MZ": "Africa/Maputo",
+      "MM": "Asia/Yangon",
+      "NA": "Africa/Windhoek",
+      "NR": "Pacific/Nauru",
+      "NP": "Asia/Kathmandu",
+      "NL": "Europe/Amsterdam",
+      "NC": "Pacific/Noumea",
+      "NZ": "Pacific/Auckland",
+      "NI": "America/Managua",
+      "NE": "Africa/Niamey",
+      "NG": "Africa/Lagos",
+      "NU": "Pacific/Niue",
+      "NF": "Pacific/Norfolk",
+      "MK": "Europe/Skopje",
+      "MP": "Pacific/Saipan",
+      "NO": "Europe/Oslo",
+      "OM": "Asia/Muscat",
+      "PK": "Asia/Karachi",
+      "PW": "Pacific/Palau",
+      "PS": "Asia/Gaza",
+      "PA": "America/Panama",
+      "PG": "Pacific/Port_Moresby",
+      "PY": "America/Asuncion",
+      "PE": "America/Lima",
+      "PH": "Asia/Manila",
+      "PN": "Pacific/Pitcairn",
+      "PL": "Europe/Warsaw",
+      "PT": "Europe/Lisbon",
+      "PR": "America/Puerto_Rico",
+      "QA": "Asia/Qatar",
+      "RE": "Indian/Reunion",
+      "RO": "Europe/Bucharest",
+      "RU": "Europe/Moscow",
+      "RW": "Africa/Kigali",
+      "BL": "America/St_Barthelemy",
+      "SH": "Atlantic/St_Helena",
+      "KN": "America/St_Kitts",
+      "LC": "America/St_Lucia",
+      "MF": "America/Marigot",
+      "PM": "America/Miquelon",
+      "VC": "America/St_Vincent",
+      "WS": "Pacific/Apia",
+      "SM": "Europe/San_Marino",
+      "ST": "Africa/Sao_Tome",
+      "SA": "Asia/Riyadh",
+      "SN": "Africa/Dakar",
+      "RS": "Europe/Belgrade",
+      "SC": "Indian/Mahe",
+      "SL": "Africa/Freetown",
+      "SG": "Asia/Singapore",
+      "SX": "America/Lower_Princes",
+      "SK": "Europe/Bratislava",
+      "SI": "Europe/Ljubljana",
+      "SB": "Pacific/Guadalcanal",
+      "SO": "Africa/Mogadishu",
+      "ZA": "Africa/Johannesburg",
+      "GS": "Atlantic/South_Georgia",
+      "SS": "Africa/Juba",
+      "ES": "Europe/Madrid",
+      "LK": "Asia/Colombo",
+      "SD": "Africa/Khartoum",
+      "SR": "America/Paramaribo",
+      "SJ": "Arctic/Longyearbyen",
+      "SE": "Europe/Stockholm",
+      "CH": "Europe/Zurich",
+      "SY": "Asia/Damascus",
+      "TW": "Asia/Taipei",
+      "TJ": "Asia/Dushanbe",
+      "TZ": "Africa/Dar_es_Salaam",
+      "TH": "Asia/Bangkok",
+      "TL": "Asia/Dili",
+      "TG": "Africa/Lome",
+      "TK": "Pacific/Fakaofo",
+      "TO": "Pacific/Tongatapu",
+      "TT": "America/Port_of_Spain",
+      "TN": "Africa/Tunis",
+      "TR": "Europe/Istanbul",
+      "TM": "Asia/Ashgabat",
+      "TC": "America/Grand_Turk",
+      "TV": "Pacific/Funafuti",
+      "UG": "Africa/Kampala",
+      "UA": "Europe/Kiev",
+      "AE": "Asia/Dubai",
+      "GB": "Europe/London",
+      "US": "America/New_York",
+      "UM": "Pacific/Johnston",
+      "UY": "America/Montevideo",
+      "UZ": "Asia/Tashkent",
+      "VU": "Pacific/Efate",
+      "VE": "America/Caracas",
+      "VN": "Asia/Ho_Chi_Minh",
+      "VG": "America/Tortola",
+      "VI": "America/St_Thomas",
+      "WF": "Pacific/Wallis",
+      "EH": "Africa/El_Aaiun",
+      "YE": "Asia/Aden",
+      "ZM": "Africa/Lusaka",
+      "ZW": "Africa/Harare"
     };
     return countryTimezoneMap[countryCode.toUpperCase()] || 'Unknown';
   }
@@ -411,9 +642,15 @@ export class DetectionEngine {
       let ipTimezone = results.ipAnalysis?.timezone;
 
       if ((!ipTimezone || ipTimezone === 'Unknown') && results.ipAnalysis?.country) {
-        const countryParts = results.ipAnalysis.country.trim().split(' ');
-        let countryCode = countryParts[countryParts.length - 1];
-        if (countryCode.length > 3) countryCode = '';
+        // Try to extract country code more robustly
+        const countryString = results.ipAnalysis.country.trim();
+        let countryCode = '';
+        const countryCodeMatch = countryString.match(/\b([A-Z]{2})\b/);
+        if (countryCodeMatch) {
+          countryCode = countryCodeMatch[1];
+        } else if (countryString.length === 2) {
+          countryCode = countryString;
+        }
         if (countryCode) {
           ipTimezone = this.getTimezoneFromCountryCode(countryCode);
         }
@@ -427,12 +664,28 @@ export class DetectionEngine {
         fingerprintTimezone !== 'Unknown'
       ) {
         fingerprintSpoofed = true;
+        const config = {
+          weight: 50,
+          label: 'Fingerprint Timezone Mismatch',
+          risk: 'Mismatch between browser fingerprint timezone and IP location timezone'
+        };
+        confidenceScore += config.weight;
+        detectedTypes.push(config.label);
+        riskFactors.push(config.risk);
       }
 
       const fingerprintContinent = this.timezoneToContinent(fingerprintTimezone);
-      const ipCountryCode = results.ipAnalysis?.country
-        ? results.ipAnalysis.country.split(' ').pop() || ''
-        : '';
+      const ipCountryCode = (() => {
+        if (!results.ipAnalysis?.country) return '';
+        const countryString = results.ipAnalysis.country.trim();
+        const countryCodeMatch = countryString.match(/\b([A-Z]{2})\b/);
+        if (countryCodeMatch) {
+          return countryCodeMatch[1];
+        } else if (countryString.length === 2) {
+          return countryString;
+        }
+        return '';
+      })();
       const ipContinent = this.countryToContinent(ipCountryCode);
 
       if (
@@ -441,6 +694,14 @@ export class DetectionEngine {
         fingerprintContinent !== ipContinent
       ) {
         fingerprintSpoofed = true;
+        const config = {
+          weight: 50,
+          label: 'Fingerprint Continent Mismatch',
+          risk: 'Mismatch between browser fingerprint continent and IP location continent'
+        };
+        confidenceScore += config.weight;
+        detectedTypes.push(config.label);
+        riskFactors.push(config.risk);
       }
 
       confidenceScore += (typeof results.fingerprint.suspicionScore === 'number' ? results.fingerprint.suspicionScore : 0) * 0.5;
