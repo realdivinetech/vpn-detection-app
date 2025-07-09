@@ -81,6 +81,7 @@ export class LocationMismatch {
     permissionGranted?: boolean;
   }> {
     if (!navigator.geolocation) {
+      console.warn('Geolocation not supported by this browser.');
       return {
         success: false,
         error: 'Geolocation not supported',
@@ -92,8 +93,9 @@ export class LocationMismatch {
     try {
       const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
       permissionGranted = permissionStatus.state === 'granted' || permissionStatus.state === 'prompt';
-    } catch {
-      // Permissions API not supported or error, fallback to false
+      console.log('Geolocation permission state:', permissionStatus.state);
+    } catch (err) {
+      console.warn('Permissions API not supported or error:', err);
       permissionGranted = false;
     }
 
@@ -104,18 +106,19 @@ export class LocationMismatch {
           navigator.geolocation.getCurrentPosition(
             () => resolve(true),
             () => resolve(false),
-            { timeout: 5000 }
+            { timeout: 7000 }
           );
         });
         permissionGranted = permissionResult;
-      } catch {
+      } catch (err) {
+        console.warn('Error requesting geolocation permission:', err);
         permissionGranted = false;
       }
     }
 
     if (!permissionGranted) {
       // User denied permission or permission not granted
-      // Return early with appropriate error message
+      console.warn('GPS permission denied or not granted');
       return {
         success: false,
         error: 'GPS permission denied or not granted',
@@ -125,12 +128,13 @@ export class LocationMismatch {
 
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
+        console.warn('GPS getCurrentPosition timeout');
         resolve({
           success: false,
           error: 'GPS timeout',
           permissionGranted
         });
-      }, 10000);
+      }, 15000);
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -159,6 +163,7 @@ export class LocationMismatch {
               errorMessage = 'GPS timeout';
               break;
           }
+          console.warn('GPS error:', errorMessage);
           resolve({
             success: false,
             error: errorMessage,
@@ -167,7 +172,7 @@ export class LocationMismatch {
         },
         {
           enableHighAccuracy: true,
-          timeout: 8000,
+          timeout: 10000,
           maximumAge: 300000 // 5 minutes
         }
       );
