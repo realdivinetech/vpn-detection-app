@@ -663,6 +663,22 @@ export class DetectionEngine {
         ipTimezone !== 'Unknown' &&
         fingerprintTimezone !== 'Unknown'
       ) {
+        console.log('Fingerprint timezone mismatch detected:', {
+          fingerprintTimezone,
+          ipTimezone,
+          ipCountry: results.ipAnalysis?.country,
+          extractedCountryCode: (() => {
+            if (!results.ipAnalysis?.country) return '';
+            const countryString = results.ipAnalysis.country.trim();
+            const countryCodeMatch = countryString.match(/\b([A-Z]{2})\b/);
+            if (countryCodeMatch) {
+              return countryCodeMatch[1];
+            } else if (countryString.length === 2) {
+              return countryString;
+            }
+            return '';
+          })()
+        });
         fingerprintSpoofed = true;
         const config = {
           weight: 50,
