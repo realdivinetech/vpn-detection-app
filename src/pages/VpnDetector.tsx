@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect, Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,38 @@ import DetectionCard from '@/components/DetectionCard';
 import DetectionResultComponent from '@/components/DetectionResult';
 import AdminPanel from '@/components/AdminPanel';
 import AdminLogin from '@/components/AdminLogin';
+import MapView from '@/components/MapView';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div className="text-red-600 font-bold p-4">Something went wrong while rendering this section.</div>;
+    }
+
+    return this.props.children;
+  }
+}
 
 export default function VpnDetector() {
   const [isScanning, setIsScanning] = useState(false);
@@ -22,14 +54,33 @@ export default function VpnDetector() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminLoginError, setAdminLoginError] = useState('');
+  const [browserLocation, setBrowserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setBrowserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.warn('Error getting browser location:', error);
+          setBrowserLocation(null);
+        }
+      );
+    }
+  }, []);
 
   const startDetection = async () => {
-    setIsScanning(true);
-    setProgress(0);
-    setResult(null);
-    setCurrentStep('Initializing...');
-
     try {
+      console.log('Starting detection...');
+      setIsScanning(true);
+      setProgress(0);
+      setResult(null);
+      setCurrentStep('Initializing...');
+
       // Simulate progress updates
       const steps = [
         'Analyzing IP address...',
@@ -41,12 +92,14 @@ export default function VpnDetector() {
       ];
 
       for (let i = 0; i < steps.length; i++) {
+        console.log('Step:', steps[i]);
         setCurrentStep(steps[i]);
         setProgress((i + 1) * 16.67);
         await new Promise(resolve => setTimeout(resolve, 800));
       }
 
       const detectionResult = await detectionEngine.runFullDetection();
+      console.log('Detection result:', detectionResult);
       setResult(detectionResult);
       setProgress(100);
     } catch (error) {
@@ -185,7 +238,7 @@ export default function VpnDetector() {
 
             {/* Detection Methods Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
-              <DetectionCard
+            <DetectionCard
                 title="IP Analysis"
                 description="ASN, geolocation, and hosting detection"
                 icon="🌐"
@@ -226,12 +279,53 @@ export default function VpnDetector() {
         </Card>
 
         {/* Detection Results */}
-        {result && (
+      {result && (
+        <>
+          {console.log('Rendering DetectionResultComponent with result:', result)}
           <div className="space-y-4 sm:space-y-6">
-            <DetectionResultComponent result={result} />
+            <ErrorBoundary>
+              <DetectionResultComponent result={result} />
+            </ErrorBoundary>
           </div>
-        )}
+        </>
+      )}
       </div>
+
+      {/* Map Views */}
+      {result && (
+        <>
+          {console.log('Rendering MapView components with result:', result, 'browserLocation:', browserLocation)}
+          <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 mt-8">
+            <h2 className="text-2xl font-semibold text-center mb-4">Location Maps</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {result?.results?.ipAnalysis?.latitude && result?.results?.ipAnalysis?.longitude && (
+              <ErrorBoundary>
+                <MapView
+                  lat={result.results.ipAnalysis.latitude}
+                  lng={result.results.ipAnalysis.longitude}
+                  label="IP Location"
+                  title="IP Location"
+                  height="300px"
+                  width="100%"
+                />
+              </ErrorBoundary>
+            )}
+            {browserLocation && (
+              <ErrorBoundary>
+                <MapView
+                  lat={browserLocation.lat}
+                  lng={browserLocation.lng}
+                  label="Browser GPS Location"
+                  title="Browser GPS Location"
+                  height="300px"
+                  width="100%"
+                />
+              </ErrorBoundary>
+            )}
+            </div>
+          </div>
+        </>
+      )}
     </main>
   );
 }

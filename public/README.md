@@ -11,6 +11,7 @@ A comprehensive, open-source web-based system for detecting VPN, proxy, Tor, and
 - **WebRTC Leak Detection**: Identifies local IP leaks through STUN servers
 - **Browser Fingerprinting**: Analyzes browser characteristics and device properties to uniquely identify devices and detect anomalies
 - **Location Verification**: Compares GPS coordinates with IP-based geolocation to detect inconsistencies indicating VPN or proxy use
+- **Map Views**: Visualizes detected IP location and browser GPS location side-by-side with clear labels, using Google Maps API for map rendering
 - **Bot Detection**: Identifies automated browsers and headless environments
 - **Behavioral Analysis**: Monitors user interaction patterns for suspicious activity
 
@@ -238,7 +239,6 @@ This project integrates with several free IP analysis services:
 - **check.getipintel.net**: Professional IP Proxy Detection
 - **IPinfo.io**: Ip check
 
-
 ## 📊 Performance
 
 - **Detection Speed**: < 9 seconds average scan time
@@ -301,3 +301,5 @@ We welcome contributions! This is an open-source project.
 **Made with ❤️ by Divine Tech (realdivinetech)**
 
 *This is an open-source project aimed at improving internet security and privacy awareness.*
+>>>>>>> REPLACE
+</edit_file>
