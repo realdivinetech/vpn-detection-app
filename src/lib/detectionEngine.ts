@@ -1038,8 +1038,8 @@ export class DetectionEngine {
         dynamicConnection: this.getDynamicConnection(data),
         securityScanner: this.getSecurityScanner(data),
         trustedNetwork: this.getTrustedNetwork(data),
-        frequentAbuser: 'Try again later.',
-        highRiskAttacks: 'Try again later.'
+        frequentAbuser: 'Upgrade your plan for better data and blocklists.',
+        highRiskAttacks: 'Upgrade your plan for better data and blocklists.'
       };
     } catch (error) {
       console.error('IP-API service failed:', error);
