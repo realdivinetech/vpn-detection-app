@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'next/navigation': path.resolve(__dirname, './src/shims/next-navigation-shim.ts')
     },
   },
 }));
