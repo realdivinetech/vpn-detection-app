@@ -6,6 +6,7 @@ import VpnDetector from './pages/VpnDetector';
 import NotFound from './pages/NotFound';
 import Documentation from './pages/Documentation';
 import { Footer } from './components/ui/Footer';
+import { Analytics } from '@vercel/analytics/next';
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Footer />
         </div>
       </BrowserRouter>
+      <Analytics />
     </TooltipProvider>
   </QueryClientProvider>
 );
